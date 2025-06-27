@@ -1,0 +1,1 @@
+set(__QT_DEPLOY_PLUGINS /Users/evgenii/Qt/6.8.0/macos/plugins/networkinformation/libqscnetworkreachability.dylib;/Users/evgenii/Qt/6.8.0/macos/plugins/tls/libqsecuretransportbackend.dylib;/Users/evgenii/Qt/6.8.0/macos/plugins/tls/libqopensslbackend.dylib)

@@ -1,0 +1,14 @@
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/bin/Debug/net9.0/GetTokenFromTelegram
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/bin/Debug/net9.0/GetTokenFromTelegram.deps.json
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/bin/Debug/net9.0/GetTokenFromTelegram.runtimeconfig.json
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/bin/Debug/net9.0/GetTokenFromTelegram.dll
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/bin/Debug/net9.0/GetTokenFromTelegram.pdb
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/obj/Debug/net9.0/GetTokenFromTelegram.GeneratedMSBuildEditorConfig.editorconfig
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/obj/Debug/net9.0/GetTokenFromTelegram.AssemblyInfoInputs.cache
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/obj/Debug/net9.0/GetTokenFromTelegram.AssemblyInfo.cs
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/obj/Debug/net9.0/GetTokenFromTelegram.csproj.CoreCompileInputs.cache
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/obj/Debug/net9.0/GetTokenFromTelegram.dll
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/obj/Debug/net9.0/refint/GetTokenFromTelegram.dll
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/obj/Debug/net9.0/GetTokenFromTelegram.pdb
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/obj/Debug/net9.0/GetTokenFromTelegram.genruntimeconfig.cache
+/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/obj/Debug/net9.0/ref/GetTokenFromTelegram.dll

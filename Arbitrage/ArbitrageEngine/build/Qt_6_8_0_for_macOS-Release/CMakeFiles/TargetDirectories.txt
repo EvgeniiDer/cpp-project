@@ -1,0 +1,9 @@
+/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Release/CMakeFiles/ArbitrageEngine.dir
+/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Release/CMakeFiles/edit_cache.dir
+/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Release/CMakeFiles/rebuild_cache.dir
+/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Release/CMakeFiles/list_install_components.dir
+/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Release/CMakeFiles/install.dir
+/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Release/CMakeFiles/install/local.dir
+/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Release/CMakeFiles/install/strip.dir
+/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Release/CMakeFiles/ArbitrageEngine_autogen_timestamp_deps.dir
+/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Release/CMakeFiles/ArbitrageEngine_autogen.dir

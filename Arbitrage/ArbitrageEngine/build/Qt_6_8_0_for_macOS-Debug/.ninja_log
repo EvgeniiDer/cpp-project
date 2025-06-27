@@ -1,0 +1,14 @@
+# ninja log v6
+67	949	1750698010348253769	CMakeFiles/ArbitrageEngine.dir/pricemonitor.cpp.o	a732737764aaa937
+945	1087	1750776243964711869	ArbitrageEngine	8caf8d8d5315f7fa
+54	945	1750776243072864637	CMakeFiles/ArbitrageEngine.dir/main.cpp.o	6b687d27fd14f536
+395	1462	1750697951402013377	CMakeFiles/ArbitrageEngine.dir/ArbitrageEngine_autogen/mocs_compilation.cpp.o	13e343f96ff42f70
+12	53	1750776243031164676	ArbitrageEngine_autogen/timestamp	58c72dfd2a8c064
+12	53	1750776243031164676	/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Debug/ArbitrageEngine_autogen/mocs_compilation.cpp	58c72dfd2a8c064
+12	53	1750776243031164676	/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Debug/ArbitrageEngine_autogen/timestamp	58c72dfd2a8c064
+12	53	1750776243031164676	ArbitrageEngine_autogen/mocs_compilation.cpp	58c72dfd2a8c064
+4	239	1750784582550156768	build.ninja	a2d2e91468f74490
+29	84	1750784582590447669	ArbitrageEngine_autogen/timestamp	58c72dfd2a8c064
+29	84	1750784582590447669	ArbitrageEngine_autogen/mocs_compilation.cpp	58c72dfd2a8c064
+29	84	1750784582590447669	/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Debug/ArbitrageEngine_autogen/timestamp	58c72dfd2a8c064
+29	84	1750784582590447669	/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Debug/ArbitrageEngine_autogen/mocs_compilation.cpp	58c72dfd2a8c064

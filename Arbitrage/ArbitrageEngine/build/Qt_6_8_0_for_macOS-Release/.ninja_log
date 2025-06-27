@@ -1,0 +1,9 @@
+# ninja log v6
+1	380	1750690000500166965	ArbitrageEngine_autogen/timestamp	3f0051bfb2e219aa
+1	380	1750690000500166965	ArbitrageEngine_autogen/mocs_compilation.cpp	3f0051bfb2e219aa
+1	380	1750690000500166965	/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Release/ArbitrageEngine_autogen/timestamp	3f0051bfb2e219aa
+1	380	1750690000500166965	/Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Release/ArbitrageEngine_autogen/mocs_compilation.cpp	3f0051bfb2e219aa
+382	1088	1750690000514888866	CMakeFiles/ArbitrageEngine.dir/main.cpp.o	a4ea3402e35e6348
+383	1099	1750690000515015319	CMakeFiles/ArbitrageEngine.dir/pricemonitor.cpp.o	b344a3f709aec214
+382	1119	1750690000514690708	CMakeFiles/ArbitrageEngine.dir/ArbitrageEngine_autogen/mocs_compilation.cpp.o	bf7ad2ad05d92c47
+1119	1171	1750690001251856324	ArbitrageEngine	54ba0191ace9c2b0

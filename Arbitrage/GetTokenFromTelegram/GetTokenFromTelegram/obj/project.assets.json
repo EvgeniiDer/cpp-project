@@ -1,0 +1,115 @@
+{
+  "version": 3,
+  "targets": {
+    "net9.0": {
+      "WTelegramClient/4.3.5": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/WTelegramClient.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/WTelegramClient.dll": {
+            "related": ".xml"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "WTelegramClient/4.3.5": {
+      "sha512": "sCV5QOxoZhNBknLozTh/0niyn4jDK8b6IZesqlXgqZBs/CVDkx6zLiFn3SlbdUNO/ZzyOSYjG8vMABQvtuur6Q==",
+      "type": "package",
+      "path": "wtelegramclient/4.3.5",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/net5.0/WTelegramClient.dll",
+        "lib/net5.0/WTelegramClient.xml",
+        "lib/net8.0/WTelegramClient.dll",
+        "lib/net8.0/WTelegramClient.xml",
+        "lib/netstandard2.0/WTelegramClient.dll",
+        "lib/netstandard2.0/WTelegramClient.xml",
+        "logo.png",
+        "wtelegramclient.4.3.5.nupkg.sha512",
+        "wtelegramclient.nuspec"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net9.0": [
+      "WTelegramClient >= 4.3.5"
+    ]
+  },
+  "packageFolders": {
+    "/Users/evgenii/.nuget/packages/": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/GetTokenFromTelegram.csproj",
+      "projectName": "GetTokenFromTelegram",
+      "projectPath": "/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/GetTokenFromTelegram.csproj",
+      "packagesPath": "/Users/evgenii/.nuget/packages/",
+      "outputPath": "/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/obj/",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "/Users/evgenii/.nuget/NuGet/NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net9.0"
+      ],
+      "sources": {
+        "/usr/local/share/dotnet/library-packs": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "projectReferences": {}
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "9.0.200"
+    },
+    "frameworks": {
+      "net9.0": {
+        "targetAlias": "net9.0",
+        "dependencies": {
+          "WTelegramClient": {
+            "target": "Package",
+            "version": "[4.3.5, )"
+          }
+        },
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.200/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

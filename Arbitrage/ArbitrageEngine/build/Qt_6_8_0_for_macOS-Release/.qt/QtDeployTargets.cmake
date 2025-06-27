@@ -1,0 +1,2 @@
+set(__QT_DEPLOY_TARGET_ArbitrageEngine_FILE /Users/evgenii/Project/Arbitrage/ArbitrageEngine/build/Qt_6_8_0_for_macOS-Release/ArbitrageEngine)
+set(__QT_DEPLOY_TARGET_ArbitrageEngine_TYPE EXECUTABLE)
