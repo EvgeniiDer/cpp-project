@@ -44,25 +44,31 @@
     ]
   },
   "packageFolders": {
-    "/Users/evgenii/.nuget/packages/": {}
+    "C:\\Users\\zasta\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/GetTokenFromTelegram.csproj",
+      "projectUniqueName": "D:\\workspace\\github.com\\cpp-project\\Arbitrage\\GetTokenFromTelegram\\GetTokenFromTelegram\\GetTokenFromTelegram.csproj",
       "projectName": "GetTokenFromTelegram",
-      "projectPath": "/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/GetTokenFromTelegram.csproj",
-      "packagesPath": "/Users/evgenii/.nuget/packages/",
-      "outputPath": "/Users/evgenii/Project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/obj/",
+      "projectPath": "D:\\workspace\\github.com\\cpp-project\\Arbitrage\\GetTokenFromTelegram\\GetTokenFromTelegram\\GetTokenFromTelegram.csproj",
+      "packagesPath": "C:\\Users\\zasta\\.nuget\\packages\\",
+      "outputPath": "D:\\workspace\\github.com\\cpp-project\\Arbitrage\\GetTokenFromTelegram\\GetTokenFromTelegram\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "/Users/evgenii/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\zasta\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
       ],
       "sources": {
-        "/usr/local/share/dotnet/library-packs": {},
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -81,7 +87,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.200"
+      "SdkAnalysisLevel": "9.0.300"
     },
     "frameworks": {
       "net9.0": {
@@ -108,7 +114,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.200/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

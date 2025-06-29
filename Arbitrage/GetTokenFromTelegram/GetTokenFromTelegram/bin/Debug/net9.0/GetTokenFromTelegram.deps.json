@@ -7,8 +7,19 @@
   "targets": {
     ".NETCoreApp,Version=v9.0": {
       "GetTokenFromTelegram/1.0.0": {
+        "dependencies": {
+          "WTelegramClient": "4.3.5"
+        },
         "runtime": {
           "GetTokenFromTelegram.dll": {}
+        }
+      },
+      "WTelegramClient/4.3.5": {
+        "runtime": {
+          "lib/net8.0/WTelegramClient.dll": {
+            "assemblyVersion": "4.3.5.0",
+            "fileVersion": "4.3.5.0"
+          }
         }
       }
     }
@@ -18,6 +29,13 @@
       "type": "project",
       "serviceable": false,
       "sha512": ""
+    },
+    "WTelegramClient/4.3.5": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-sCV5QOxoZhNBknLozTh/0niyn4jDK8b6IZesqlXgqZBs/CVDkx6zLiFn3SlbdUNO/ZzyOSYjG8vMABQvtuur6Q==",
+      "path": "wtelegramclient/4.3.5",
+      "hashPath": "wtelegramclient.4.3.5.nupkg.sha512"
     }
   }
 }
