@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "EyWL/8+MNdY=",
+  "dgSpecHash": "FwTthTeXqOU=",
   "success": true,
-  "projectFilePath": "D:\\workspace\\github.com\\cpp-project\\Arbitrage\\GetTokenFromTelegram\\GetTokenFromTelegram\\GetTokenFromTelegram.csproj",
+  "projectFilePath": "/Users/evgenii/Project/cpp-project/Arbitrage/GetTokenFromTelegram/GetTokenFromTelegram/GetTokenFromTelegram.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\zasta\\.nuget\\packages\\wtelegramclient\\4.3.5\\wtelegramclient.4.3.5.nupkg.sha512"
+    "/Users/evgenii/.nuget/packages/wtelegramclient/4.3.5/wtelegramclient.4.3.5.nupkg.sha512"
   ],
   "logs": []
 }
