@@ -7,6 +7,7 @@
 #include <QOpenGLBuffer>
 #include <QOpenGLVertexArrayObject>
 #include <QWidget>
+#include <vector>
 
 class FastChart : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -21,7 +22,7 @@ protected:
 private:
 	void initShaders();
 	void generationGridData();
-	void generationTestGraphData();
+	void generationGraphData();
 
 	QOpenGLShaderProgram* m_program;
 
@@ -34,6 +35,6 @@ private:
 	int m_graphVertexCount = 0;
 
 	void generateTestGraphData();
-}
+};
 
 #endif // FASTCHART_H

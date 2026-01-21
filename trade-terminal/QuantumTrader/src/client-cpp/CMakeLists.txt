@@ -18,9 +18,11 @@ file(GLOB_RECURSE SOURCES
     "core/*.cpp" "core/*.h"
     "ui/*.cpp" "ui/*.h"
     "connectors/*.cpp" "connectors/*.h"
+    
 )
 
-add_executable(quantum_trader ${SOURCES})
+add_executable(quantum_trader main.cpp ${SOURCES} resources.qrc)
+
 
 target_include_directories(quantum_trader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
                                                   ${Qt6Core_INCLUDE_DIRS}
