@@ -14,9 +14,6 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGLWidgets)
 
-# --- БЕЗОПАСНЫЙ ПОИСК ФАЙЛОВ ---
-# Мы явно указываем, в каких папках лежит наш код.
-# Он больше НИКОГДА не залезет в папку 'out'.
 file(GLOB_RECURSE SOURCES
     "core/*.cpp" "core/*.h"
     "ui/*.cpp" "ui/*.h"
@@ -25,8 +22,12 @@ file(GLOB_RECURSE SOURCES
 
 add_executable(quantum_trader ${SOURCES})
 
-# Эта строка нужна, чтобы #include "charts/FastChart.h" работало
-target_include_directories(quantum_trader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(quantum_trader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+                                                  ${Qt6Core_INCLUDE_DIRS}
+                                                  ${Qt6Gui_INCLUDE_DIRS}
+                                                  ${Qt6Widgets_INCLUDE_DIRS}
+                                                  ${Qt6OpenGLWidgets_INCLUDE_DIRS})
+                                        
 
 target_link_libraries(quantum_trader PRIVATE
     Qt6::Core
