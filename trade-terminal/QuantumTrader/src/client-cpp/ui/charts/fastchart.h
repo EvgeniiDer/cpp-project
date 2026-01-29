@@ -9,7 +9,7 @@
 #include <QWidget>
 #include <vector>
 #include <QWheelEvent>
-
+#include <cmath>
 class FastChart : public QOpenGLWidget, protected QOpenGLFunctions
 {
 	Q_OBJECT
@@ -23,6 +23,7 @@ protected:
 	void resizeGL(int w, int h) override;
 private:
 	float m_zoomFactor = 1.0f;
+	float m_aspectRatio = 1.0f;
 	void initShaders();
 	void generationGridData();
 	void generationGraphData();
