@@ -17,6 +17,7 @@ FastChart::~FastChart()
 	
 	delete m_program;
 }
+//Initialize Shaders
 void FastChart::initShaders()
 {
 	m_program = new QOpenGLShaderProgram(this);
@@ -99,8 +100,8 @@ void FastChart::initializeGL()
 	m_program->setAttributeBuffer(0, GL_FLOAT, 0, 2, 0); //
 
 
-	m_vaoGrid.release();
 	generationGridData();
+	m_vaoGrid.release();
 	
 
 	m_vaoGraph.create();
@@ -111,17 +112,46 @@ void FastChart::initializeGL()
 
 	m_program->enableAttributeArray(0);
 	m_program->setAttributeBuffer(0, GL_FLOAT, 0, 2, 0);
-	m_vaoGraph.release();
+
+	
 	generationGraphData();
+	m_vaoGraph.release();
+
+}
+void FastChart::wheelEvent(QWheelEvent* event)
+{
+	int delta = event->angleDelta().y();//Vertical + -
+	if (delta > 0)
+	{
+		m_zoomFactor *= 0.9f;
+	}
+	else if(delta < 0)
+	{
+		m_zoomFactor *= 1.1f;
+	}
+	generationGridData();
+	update();
 
 }
 void FastChart::paintGL()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
-	if (!m_program->bind())
+	if (!m_program->isLinked() ||!m_program->bind())
 	{
-		return;
+		return; 
 	}
+	
+	QMatrix4x4 matrix;
+
+	matrix.ortho(
+		-1.0f * m_zoomFactor,
+		1.0f * m_zoomFactor,
+		-1.0f * m_zoomFactor,
+		1.0f * m_zoomFactor,
+		-1.0f,
+		1.0f
+	);
+	m_program->setUniformValue("mvp_matrix", matrix);
 
 	m_vaoGrid.bind();
 	glDrawArrays(GL_LINES, 0, m_gridVertexCount);

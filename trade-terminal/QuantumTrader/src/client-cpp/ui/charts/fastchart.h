@@ -8,6 +8,7 @@
 #include <QOpenGLVertexArrayObject>
 #include <QWidget>
 #include <vector>
+#include <QWheelEvent>
 
 class FastChart : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -16,10 +17,12 @@ public:
 	explicit FastChart(QWidget* parent = nullptr);
 	~FastChart() override;
 protected:
+	void wheelEvent(QWheelEvent* event) override;
 	void initializeGL() override;
 	void paintGL() override;
 	void resizeGL(int w, int h) override;
 private:
+	float m_zoomFactor = 1.0f;
 	void initShaders();
 	void generationGridData();
 	void generationGraphData();
