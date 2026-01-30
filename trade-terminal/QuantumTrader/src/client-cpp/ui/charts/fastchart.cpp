@@ -16,6 +16,7 @@ FastChart::~FastChart()
 	m_vaoGrid.destroy();
 	
 	delete m_program;
+		//to NDC
 }
 void FastChart::contextMenuEvent(QContextMenuEvent* event)
 {
@@ -27,7 +28,7 @@ void FastChart::contextMenuEvent(QContextMenuEvent* event)
 	stretchToWindowAction->setCheckable(true);
 	freeToWindowAction->setCheckable(true);
 
-	if (m_renderMode == RenderMode::StrethToWindow)
+	if (m_renderMode == RenderMode::StretchToWindow)
 	{
 		stretchToWindowAction->setChecked(true);
 	} else
@@ -37,13 +38,13 @@ void FastChart::contextMenuEvent(QContextMenuEvent* event)
 
 	connect(stretchToWindowAction, &QAction::triggered, this, [this]()
 		{
-			m_renderMode = RenderMode::StrethToWindow;
+			m_renderMode = RenderMode::StretchToWindow;
 			generationGridData();
 			update();
 		});
 	connect(freeToWindowAction, &QAction::triggered, this, [this]()
 		{
-			m_renderMode = RenderMode::FreePanAdZoom;
+			m_renderMode = RenderMode::FreePanAndZoom;
 			generationGridData();
 			update();
 		});
@@ -105,10 +106,22 @@ void FastChart::generationGridData()
 	else step = 10.0f;
 	step *= stepPower;
 
-	float right = m_zoomFactor * m_aspectRatio;
-	float left = -right;
-	float top = m_zoomFactor;
-	float bottom = -top;
+	float right, left, top, bottom;
+	
+	if (m_renderMode == RenderMode::FreePanAndZoom)
+	{
+		right = m_panX + m_zoomFactor * m_aspectRatio;
+		left = m_panX - m_zoomFactor * m_aspectRatio;
+		top = m_panY + m_zoomFactor;
+		bottom = m_panY - m_zoomFactor;
+	} 
+	else//(m_renderMode == RenderMode::StrethToWindow)
+	{
+		right = m_zoomFactor * m_aspectRatio;
+		left = -right;
+		top = m_zoomFactor;
+		bottom = -top;
+	}
 
 	float startX = std::floor(left / step) * step;
 	float startY = std::floor(bottom / step) * step;
@@ -188,34 +201,77 @@ void FastChart::paintGL()
 		return; 
 	}
 	
-	QMatrix4x4 grid_matrix;
-	grid_matrix.ortho(
-		-1.0f * m_zoomFactor * m_aspectRatio, 1.0f * m_zoomFactor * m_aspectRatio,
-		-1.0f * m_zoomFactor, 1.0f * m_zoomFactor,
-		-1.0f, 1.0f);
-
-	QMatrix4x4 chart_matrix;
-	chart_matrix.ortho(
-		-1.0f * m_zoomFactor, 1.0f * m_zoomFactor,
-		-1.0f * m_zoomFactor, 1.0f * m_zoomFactor,
-		-1.0f, 1.0f);
-
-
-	m_program->setUniformValue("mvp_matrix", grid_matrix);
-	m_vaoGrid.bind();
-	glDrawArrays(GL_LINES, 0, m_gridVertexCount);
-	m_vaoGrid.release();
-
-
-	if (m_graphVertexCount > 0)
+	if (m_renderMode == RenderMode::FreePanAndZoom)
 	{
-		m_program->setUniformValue("mvp_matrix", chart_matrix);
-		m_vaoGraph.bind();
-		glDrawArrays(GL_LINE_STRIP, 0, m_graphVertexCount);
-		m_vaoGraph.release();
-	}
+		QMatrix4x4 grid_matrix;
+		grid_matrix.ortho(-1.0f * m_zoomFactor * m_aspectRatio, 1.0f * m_zoomFactor * m_aspectRatio, -1.0f * m_zoomFactor, 1.0f * m_zoomFactor, -1.0f, 1.0f);
+		grid_matrix.translate(-m_panX, -m_panY, 0);
 
+		QMatrix4x4 chart_matrix;
+		chart_matrix.ortho(-1.0f * m_zoomFactor, 1.0f * m_zoomFactor, -1.0f * m_zoomFactor, 1.0f * m_zoomFactor, -1.0f, 1.0f);
+		chart_matrix.translate(-m_panX, -m_panY, 0);
+
+		m_program->setUniformValue("mvp_matrix", grid_matrix);
+		m_vaoGrid.bind();
+		glDrawArrays(GL_LINES, 0, m_gridVertexCount);
+		m_vaoGrid.release();
+
+		if (m_graphVertexCount > 0)
+		{
+			m_program->setUniformValue("mvp_matrix", chart_matrix);
+			m_vaoGraph.bind();
+			glDrawArrays(GL_LINE_STRIP, 0, m_graphVertexCount);
+			m_vaoGraph.release();
+		}
+	} else 	{
+		QMatrix4x4 matrix;
+		matrix.ortho(-1.0f * m_zoomFactor * m_aspectRatio, 1.0f * m_zoomFactor * m_aspectRatio, -1.0f * m_zoomFactor, 1.0f * m_zoomFactor, -1.0f, 1.0f);
+		m_program->setUniformValue("mvp_matrix", matrix);
+
+		m_vaoGrid.bind();
+		glDrawArrays(GL_LINES, 0, m_gridVertexCount);
+		m_vaoGrid.release();
+
+		if (m_graphVertexCount > 0)
+		{
+			m_vaoGraph.bind();
+			glDrawArrays(GL_LINE_STRIP, 0, m_graphVertexCount);
+			m_vaoGraph.release();
+		}
+	}
 	m_program->release();
+}
+void FastChart::mousePressEvent(QMouseEvent* event)
+{
+	if (m_renderMode != RenderMode::FreePanAndZoom)
+	{
+		return;
+	}
+	if (event->buttons() & Qt::LeftButton)
+	{
+		m_lastMousePos = event->position();
+	}
+}
+void FastChart::mouseMoveEvent(QMouseEvent* event)
+{
+	if (m_renderMode != RenderMode::FreePanAndZoom)
+	{
+		return;
+	}
+	if (event->buttons() & Qt::LeftButton)
+	{
+		QPointF delta = event->position() - m_lastMousePos;
+
+		float worldDeltaX = delta.x() * 2.0f * m_zoomFactor * m_aspectRatio / width();
+		float worldDeltaY = delta.y() * 2.0f * m_zoomFactor / height();
+
+		m_panX -= worldDeltaX;
+		m_panY += worldDeltaY; 
+		
+		m_lastMousePos = event->position();
+		generationGridData();
+		update();
+	}
 }
 void FastChart::resizeGL(int w, int h)
 {

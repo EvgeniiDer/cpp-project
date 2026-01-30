@@ -11,14 +11,15 @@
 #include <vector>
 #include <QWheelEvent>
 #include <cmath>
+#include<QPointF>
 class FastChart : public QOpenGLWidget, protected QOpenGLFunctions
 {
 	Q_OBJECT
 public:
 	enum class RenderMode
 	{
-		StrethToWindow,
-		FreePanAdZoom
+		StretchToWindow,
+		FreePanAndZoom
 	};
 	explicit FastChart(QWidget* parent = nullptr);
 	~FastChart() override;
@@ -28,13 +29,18 @@ protected:
 	void paintGL() override;
 	void resizeGL(int w, int h) override;
 	void contextMenuEvent(QContextMenuEvent* event) override;
+	void mousePressEvent(QMouseEvent* event) override;
+	void mouseMoveEvent(QMouseEvent* event) override;
 private:
 	float m_zoomFactor = 1.0f;
 	float m_aspectRatio = 1.0f;
+	float m_panX = 0.0f;
+	float m_panY = 0.0f;
+	QPointF m_lastMousePos;
 	void initShaders();
 	void generationGridData();
 	void generationGraphData();
-	RenderMode m_renderMode = RenderMode::FreePanAdZoom;
+	RenderMode m_renderMode = RenderMode::FreePanAndZoom;
 
 	QOpenGLShaderProgram* m_program;
 
