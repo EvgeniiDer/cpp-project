@@ -1,5 +1,5 @@
 ﻿#include"fastchart.h"
-
+#include <QMenu>
 FastChart::FastChart(QWidget* parent)
 	: QOpenGLWidget(parent)
 {
@@ -16,6 +16,38 @@ FastChart::~FastChart()
 	m_vaoGrid.destroy();
 	
 	delete m_program;
+}
+void FastChart::contextMenuEvent(QContextMenuEvent* event)
+{
+	QMenu contextMenu(this);
+
+	QAction* stretchToWindowAction = contextMenu.addAction("Streth To Window");
+	QAction* freeToWindowAction = contextMenu.addAction("Free to Window");
+
+	stretchToWindowAction->setCheckable(true);
+	freeToWindowAction->setCheckable(true);
+
+	if (m_renderMode == RenderMode::StrethToWindow)
+	{
+		stretchToWindowAction->setChecked(true);
+	} else
+	{
+		freeToWindowAction->setChecked(true);
+	}
+
+	connect(stretchToWindowAction, &QAction::triggered, this, [this]()
+		{
+			m_renderMode = RenderMode::StrethToWindow;
+			generationGridData();
+			update();
+		});
+	connect(freeToWindowAction, &QAction::triggered, this, [this]()
+		{
+			m_renderMode = RenderMode::FreePanAdZoom;
+			generationGridData();
+			update();
+		});
+	contextMenu.exec(event->globalPos());
 }
 //Initialize Shaders
 void FastChart::initShaders()
@@ -62,10 +94,8 @@ void FastChart::generationGridData()
 
 	const int targetLineCount = 20;
 
-	// Теперь мы вычисляем видимый диапазон для каждой оси ОТДЕЛЬНО
 	float visibleHeight = 2.0f * m_zoomFactor;
 
-	// Вычисляем шаг, ориентируясь на ВЫСОТУ (чтобы клетки оставались квадратными)
 	float roughStep = visibleHeight / targetLineCount;
 	float stepPower = std::pow(10.0f, std::floor(std::log10(roughStep)));
 	float step = roughStep / stepPower;
@@ -75,7 +105,6 @@ void FastChart::generationGridData()
 	else step = 10.0f;
 	step *= stepPower;
 
-	// Вычисляем реальные границы видимой области
 	float right = m_zoomFactor * m_aspectRatio;
 	float left = -right;
 	float top = m_zoomFactor;
@@ -84,13 +113,11 @@ void FastChart::generationGridData()
 	float startX = std::floor(left / step) * step;
 	float startY = std::floor(bottom / step) * step;
 
-	// Рисуем вертикальные линии на всю высоту
 	for (float x = startX; x <= right; x += step)
 	{
 		vertices.push_back(x); vertices.push_back(bottom);
 		vertices.push_back(x); vertices.push_back(top);
 	}
-	// Рисуем горизонтальные линии на всю ширину
 	for (float y = startY; y <= top; y += step)
 	{
 		vertices.push_back(left);  vertices.push_back(y);
@@ -101,7 +128,8 @@ void FastChart::generationGridData()
 	m_vboGrid.bind();
 	m_vboGrid.allocate(vertices.data(), vertices.size() * sizeof(float));
 	m_vboGrid.release();
-}void FastChart::initializeGL()
+}
+void FastChart::initializeGL()
 {
 	initializeOpenGLFunctions();
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -160,28 +188,34 @@ void FastChart::paintGL()
 		return; 
 	}
 	
-	QMatrix4x4 matrix;
+	QMatrix4x4 grid_matrix;
+	grid_matrix.ortho(
+		-1.0f * m_zoomFactor * m_aspectRatio, 1.0f * m_zoomFactor * m_aspectRatio,
+		-1.0f * m_zoomFactor, 1.0f * m_zoomFactor,
+		-1.0f, 1.0f);
 
-	matrix.ortho(
-		-1.0f * m_zoomFactor * m_aspectRatio,
-		1.0f * m_zoomFactor * m_aspectRatio,
-		-1.0f * m_zoomFactor,
-		1.0f * m_zoomFactor,
-		-1.0f,
-		1.0f
-	);
-	m_program->setUniformValue("mvp_matrix", matrix);
+	QMatrix4x4 chart_matrix;
+	chart_matrix.ortho(
+		-1.0f * m_zoomFactor, 1.0f * m_zoomFactor,
+		-1.0f * m_zoomFactor, 1.0f * m_zoomFactor,
+		-1.0f, 1.0f);
 
+
+	m_program->setUniformValue("mvp_matrix", grid_matrix);
 	m_vaoGrid.bind();
 	glDrawArrays(GL_LINES, 0, m_gridVertexCount);
 	m_vaoGrid.release();
 
+
 	if (m_graphVertexCount > 0)
 	{
+		m_program->setUniformValue("mvp_matrix", chart_matrix);
 		m_vaoGraph.bind();
 		glDrawArrays(GL_LINE_STRIP, 0, m_graphVertexCount);
 		m_vaoGraph.release();
 	}
+
+	m_program->release();
 }
 void FastChart::resizeGL(int w, int h)
 {
@@ -191,4 +225,5 @@ void FastChart::resizeGL(int w, int h)
 	}
 	m_aspectRatio = static_cast<float>(w) / static_cast<float>(h);
 	generationGridData();
+	update();
 }
