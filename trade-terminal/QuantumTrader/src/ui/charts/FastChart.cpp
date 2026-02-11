@@ -82,33 +82,61 @@ void FastChart::mousePressEvent(QMouseEvent* event)
 
 void FastChart::mouseMoveEvent(QMouseEvent* event)
 {
-	if (m_isDragging)
-	{
-		QPointF delta = event->position() - m_lastMousePos;
+	if (!m_isDragging) return;
+	
+	QPointF delta = event->position() - m_lastMousePos;
 
+	bool isCtrlPressed = event->modifiers() & Qt::ControlModifier;
+	
+
+	if (isCtrlPressed)
+	{
+		float zoomFactor = 1.0f + (delta.y() * 0.01f);
+		m_cam.zoomY *= zoomFactor;
+		if (m_cam.zoomY < 1.0f) m_cam.zoomY = 1.0f;
+	}
+	else
+	{
 		float candlesPerPixel = m_cam.zoomX / width();
 		float pricePerPixel = m_cam.zoomY / height();
 
 		m_cam.x -= delta.x() * candlesPerPixel; 
 		m_cam.y += delta.y() * pricePerPixel;
+	}
 
 		m_lastMousePos = event->position();
 		update(); 	
-	}
 }
 void FastChart::wheelEvent(QWheelEvent* event)
 {
-	if (event->angleDelta().y() > 0)
+	bool isCtrlPressed = event->modifiers() & Qt::ControlModifier;
+
+	int delta = event->angleDelta().y();
+	float zoomInFactor = 0.9f;
+	float zoomOutFactor = 1.1f;
+	if (isCtrlPressed)
 	{
-		m_cam.zoomX *= 0.9f; 
-
-
+		if (delta > 0)
+		{
+			m_cam.zoomY *= zoomInFactor;
+		}
+		else
+		{
+			m_cam.zoomY *= zoomOutFactor;
+		}
+		if (m_cam.zoomY < 1.0f) m_cam.zoomY = 1.0f;
 	} else
 	{
-		m_cam.zoomX *= 1.1f; 	
+		if (delta > 0)
+		{
+			m_cam.zoomX *= zoomInFactor;
+		}
+		else
+		{
+			m_cam.zoomX *= zoomOutFactor;
+		}
+		if (m_cam.zoomX < 5.0f) m_cam.zoomX = 5.0f;
 	}
-
-	if (m_cam.zoomX < 5.0f) m_cam.zoomX = 5.0f;
 
 	update();
 }
