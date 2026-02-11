@@ -1,6 +1,0 @@
-<!DOCTYPE RCC><RCC version="1.0">
-<qresource prefix="/shaders">
-    <file alias="grid.vert">ui/charts/shaders/grid.vert</file>
-    <file alias="grid.frag">ui/charts/shaders/grid.frag</file>
-</qresource>
-</RCC>
