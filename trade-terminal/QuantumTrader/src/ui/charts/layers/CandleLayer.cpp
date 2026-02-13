@@ -3,7 +3,7 @@
 #include <algorithm>
 
 
-struct VertexData
+struct CandleVertexData
 {
 	float x, y;
 	float r, g, b;
@@ -32,10 +32,10 @@ void CandleLayer::initializeGL()
 	m_vbo.bind();
 
 	m_program->enableAttributeArray(0);
-	m_program->setAttributeBuffer(0, GL_FLOAT, 0, 2, sizeof(VertexData));
+	m_program->setAttributeBuffer(0, GL_FLOAT, 0, 2, sizeof(CandleVertexData));
 
 	m_program->enableAttributeArray(1);
-	m_program->setAttributeBuffer(1, GL_FLOAT, 2 * sizeof(float), 3, sizeof(VertexData));
+	m_program->setAttributeBuffer(1, GL_FLOAT, 2 * sizeof(float), 3, sizeof(CandleVertexData));
 
 	m_vao.release();
 	m_vbo.release();
@@ -71,7 +71,7 @@ void CandleLayer::rebuildVBO()
 		return;
 	}
 
-	std::vector<VertexData> vertices;
+	std::vector<CandleVertexData> vertices;
 	vertices.reserve(m_candles.size() * 18);
 
 	const float bodyWidth = 0.8f;
@@ -117,7 +117,7 @@ void CandleLayer::rebuildVBO()
 
 	m_vao.bind();
 	m_vbo.bind();
-	m_vbo.allocate(vertices.data(), vertices.size() * sizeof(VertexData));
+	m_vbo.allocate(vertices.data(), vertices.size() * sizeof(CandleVertexData));
 	m_vbo.release();
 	m_vao.release();
 

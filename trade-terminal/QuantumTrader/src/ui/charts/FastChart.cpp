@@ -4,9 +4,16 @@
 
 FastChart::FastChart(QWidget* parent) : QOpenGLWidget(parent)
 {
+	//candleTest layer
 	std::unique_ptr<CandleLayer> layer = std::make_unique<CandleLayer>();
 	m_candleLayer = layer.get();
 	m_layers.push_back(std::move(layer));
+
+	std::unique_ptr<GridLayer> gridLayer = std::make_unique<GridLayer>();
+	m_gridLayer = gridLayer.get();
+	m_layers.push_back(std::move(gridLayer));
+
+
 }
 FastChart::~FastChart()
 {

@@ -1,4 +1,4 @@
-#pragma
+#pragma once
 
 #include<QOpenGlFunctions>
 #include<QMatrix4x4>

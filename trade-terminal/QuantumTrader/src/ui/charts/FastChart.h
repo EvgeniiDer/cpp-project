@@ -4,7 +4,9 @@
 #include<QOpenGlFunctions>
 #include<vector>
 #include<memory>
-#include "layers\CandleLayer.h"
+#include "layers/CandleLayer.h"
+#include "layers/GridLayer.h"
+
 
 
 
@@ -45,7 +47,9 @@ private:
 
 	std::vector<std::unique_ptr<IChartLayer>> m_layers;
 
+	//LAYERS!!! 
 	CandleLayer* m_candleLayer = nullptr;
+	GridLayer* m_gridLayer = nullptr;
 };
 
 
