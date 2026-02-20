@@ -6,6 +6,7 @@
 #include<memory>
 #include "layers/CandleLayer.h"
 #include "layers/GridLayer.h"
+#include "layers/AxisLayer.h"
 
 
 
@@ -16,7 +17,7 @@ class FastChart : public QOpenGLWidget, protected QOpenGLFunctions
 public:
 	explicit FastChart(QWidget* parent = nullptr);
 	~FastChart() override;
-	CandleLayer* candleLayer()const
+	CandleLayer* getCandleLayer()const
 	{
 		return m_candleLayer;
 	}
@@ -50,6 +51,7 @@ private:
 	//LAYERS!!! 
 	CandleLayer* m_candleLayer = nullptr;
 	GridLayer* m_gridLayer = nullptr;
+	AxisLayer* m_axisLayer = nullptr;
 };
 
 

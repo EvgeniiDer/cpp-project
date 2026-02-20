@@ -28,6 +28,7 @@ void CandleLayer::initializeGL()
 	m_vao.create();
 	m_vao.bind();
 
+
 	m_vbo.create();
 	m_vbo.bind();
 
@@ -74,8 +75,8 @@ void CandleLayer::rebuildVBO()
 	std::vector<CandleVertexData> vertices;
 	vertices.reserve(m_candles.size() * 18);
 
-	const float bodyWidth = 0.8f;
-	const float wickWidth = 0.2f;
+	const float bodyWidth = 0.8f;//ширина свечи
+	const float wickWidth = 0.2f;// ширина фитиля
 
 	for (size_t i = 0; i < m_candles.size(); ++i)
 	{

@@ -67,7 +67,7 @@ void GridLayer::updateGrid(const ChartContext& context)
 
     std::vector<GridVertexData> vertices;
 
-    float rangeY = vp.height();
+    float rangeY = vp.height();// vp.priceMax - vp.priceMin
     if (rangeY <= 0.00001f) rangeY = 1.0f; 
     float stepY = std::pow(10.0f, std::floor(std::log10(rangeY / 5.0f)));
     if (stepY <= 0.00001f) stepY = 1.0f;

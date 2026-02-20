@@ -1,18 +1,22 @@
-#include"FastChart.h" 
+﻿#include"FastChart.h" 
+#include<qpainter>
 #include<QMouseEvent>
 #include<qmatrix4x4>
 
 FastChart::FastChart(QWidget* parent) : QOpenGLWidget(parent)
 {
 	//candleTest layer
-	std::unique_ptr<CandleLayer> layer = std::make_unique<CandleLayer>();
-	m_candleLayer = layer.get();
-	m_layers.push_back(std::move(layer));
-
 	std::unique_ptr<GridLayer> gridLayer = std::make_unique<GridLayer>();
-	m_gridLayer = gridLayer.get();
+	m_gridLayer = gridLayer.get();// Корчое возвращает нам указатель на кучу где храниться этот обьект замена если бы мы обращались бы к векторму к которому пердаеться управление как m_layers[0]!!!!! Для упрощения пометка использвать в дальнешем
 	m_layers.push_back(std::move(gridLayer));
 
+	std::unique_ptr<CandleLayer> candleLayer = std::make_unique<CandleLayer>();
+	m_candleLayer = candleLayer.get();
+	m_layers.push_back(std::move(candleLayer));
+
+	std::unique_ptr<AxisLayer> axisLayer = std::make_unique<AxisLayer>();
+	m_axisLayer = axisLayer.get();
+	m_layers.push_back(std::move(axisLayer));
 
 }
 FastChart::~FastChart()
@@ -46,11 +50,20 @@ void FastChart::paintGL()
 	viewport.priceMin = m_cam.y - halfY;
 	viewport.priceMax = m_cam.y + halfY;
 
-	ChartContext context = { mvp, viewport, QPointF(), false };
+	ChartContext context = { mvp, viewport, QPointF(), false, nullptr, width(), height()};
 
 	for (const std::unique_ptr<IChartLayer>& layer : m_layers)
 	{
 		layer->paintGL(context);
+	}
+
+	QPainter painter(this);
+	painter.setRenderHint(QPainter::Antialiasing);
+	context.painter = &painter;
+
+	for (const std::unique_ptr<IChartLayer>& layer : m_layers)
+	{
+		layer->paintUI(context);
 	}
 } 
 void FastChart::resizeGL(int w, int h)
@@ -59,7 +72,7 @@ void FastChart::resizeGL(int w, int h)
 	{
 		layer->resizeGL(w, h);
 	}
-		
+		 
 }
 
 QMatrix4x4 FastChart::calculateMvpMatrix()

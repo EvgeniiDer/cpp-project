@@ -2,7 +2,6 @@
 #include <cmath>
 #include <algorithm> 
 
-// Подключаем файлы. НЕ КОПИРУЕМ СЮДА КОД СТРУКТУР!
 #include "ui/charts/FastChart.h"
 #include "core/models/Candle.h" // <--- Берем Candle отсюда
 
@@ -32,9 +31,18 @@ int main(int argc, char* argv[])
         testData.emplace_back(i, o, h, l, c, v);
     }
 
-    if (chart.candleLayer())
+    if (chart.getCandleLayer())
     {
-        chart.candleLayer()->setCandles(testData);
+        chart.getCandleLayer()->setCandles(testData);
+ //       chart.getCandleLayer() возвращает m_candleLayer которая в свою очередь в конструкторе FastChart
+//        ссылаеться при помощи метода .get() на память в куче обьекта который потом мы передаем под
+//        управление в vector<std::unique_ptr<IChartLayer>>m_layers 
+//        std::unique_ptr<GridLayer> gridLayer = std::make_unique<GridLayer>();
+//        m_gridLayer = gridLayer.get(); Корчое возвращает нам указатель на кучу где храниться этот 
+//        обьект это замена если бы мы обращались бы к векторму к которому пердаеться управление как m_layers
+//        [1]!!!!! Для упрощения пометка использвать в дальнешем
+//        m_layers.push_back(std::move(gridLayer));
+
     }
 
     chart.show();
