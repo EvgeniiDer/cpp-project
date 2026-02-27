@@ -15,6 +15,10 @@ public:
 
 	void paintUI(const ChartContext& constext)override;
 	void setTextColor(const QColor& color);
+	int getPriceAxisWidth()const;
+	int getTimeAxisHeight()const;
+	void setPriceAxisWidth(int newWidth);
+	void setTimeAxisHeight(int height);
 private:
 	QColor m_textColor = QColor(200, 200, 200);
 	QFont m_font;

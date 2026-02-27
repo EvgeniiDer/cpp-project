@@ -1,7 +1,7 @@
 ﻿#include <QApplication>
 #include <cmath>
 #include <algorithm> 
-
+#include <qstring>
 #include "ui/charts/FastChart.h"
 #include "core/models/Candle.h" // <--- Берем Candle отсюда
 
@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
 
     FastChart chart;
     chart.resize(1200, 800);
-    chart.setWindowTitle("Quantum Trader - Final Test");
+    chart.setWindowTitle(QObject::tr("Quantum Trader - Final Test"));
 
     std::vector<Candle> testData;
     testData.reserve(1000);

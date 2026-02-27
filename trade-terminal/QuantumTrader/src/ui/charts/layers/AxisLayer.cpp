@@ -15,6 +15,24 @@ void AxisLayer::setTextColor(const QColor& color)
 {
 	m_textColor = color;
 }
+int AxisLayer::getPriceAxisWidth()const
+{
+	return m_priceAxisWidth;
+}
+int AxisLayer::getTimeAxisHeight()const
+{
+    return m_timeAxisHeight;
+}
+
+void AxisLayer::setPriceAxisWidth(int width)
+{
+    m_priceAxisWidth = width;
+}
+
+void AxisLayer::setTimeAxisHeight(int height)
+{
+    m_timeAxisHeight = height;
+}
 
 void AxisLayer::paintUI(const ChartContext& context)
 {

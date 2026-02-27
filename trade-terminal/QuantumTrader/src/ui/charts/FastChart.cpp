@@ -5,6 +5,8 @@
 
 FastChart::FastChart(QWidget* parent) : QOpenGLWidget(parent)
 {
+	//Settings
+	this->setMouseTracking(true);
 	//candleTest layer
 	std::unique_ptr<GridLayer> gridLayer = std::make_unique<GridLayer>();
 	m_gridLayer = gridLayer.get();// Корчое возвращает нам указатель на кучу где храниться этот обьект замена если бы мы обращались бы к векторму к которому пердаеться управление как m_layers[0]!!!!! Для упрощения пометка использвать в дальнешем
@@ -89,73 +91,149 @@ QMatrix4x4 FastChart::calculateMvpMatrix()
 	matrix.ortho(left, right, bottom, top, -1.0f, 1.0f);
 	return matrix;
 }
+FastChart::DragState FastChart::getZoneAt(const QPointF& pos)
+{
+	float x = pos.x();
+	float y = pos.y();
 
+	float axisWidth = m_axisLayer->getPriceAxisWidth();
+	float axisHeight = m_axisLayer->getTimeAxisHeight();
+	
+	float bordeX = this->width() - axisWidth;
 
+	if(std::abs(x - bordeX) <= 5.0f)
+	{
+		return DragState::ResizePriceAxis;
+	}
+
+	if (x >= this->width() - axisWidth) 
+		return DragState::PriceAxis;
+	if (y >= this->height() - axisHeight) 
+		return DragState::DateAxis;
+	return DragState::ChartArea;
+}
+void FastChart::mouseReleaseEvent(QMouseEvent* evetn)
+{
+	m_dragState = DragState::None;
+}
 void FastChart::mousePressEvent(QMouseEvent* event)
 {
 	if (event->button() == Qt::LeftButton)
 	{
-		m_isDragging = true;
+		m_dragState = getZoneAt(event->position());
 		m_lastMousePos = event->position();
 	}
 }
 
 void FastChart::mouseMoveEvent(QMouseEvent* event)
 {
-	if (!m_isDragging) return;
+
+	if (m_dragState == DragState::None)
+	{
+		DragState hoverZone = getZoneAt(event->position());
+		if (hoverZone == DragState::ResizePriceAxis)
+		{
+			this->setCursor(Qt::SplitHCursor);
+		} else
+		{
+			this->unsetCursor();
+		}
+		return;
+	}
 	
 	QPointF delta = event->position() - m_lastMousePos;
+	if (m_dragState == DragState::ResizePriceAxis)
+	{
+		int newWidth = this->width() - event->position().x();
 
-	bool isCtrlPressed = event->modifiers() & Qt::ControlModifier;
-	
-
-	if (isCtrlPressed)
+		if (newWidth < 40) newWidth = 40;
+		if (newWidth > 200) newWidth = 200;
+		
+		m_axisLayer->setPriceAxisWidth(newWidth);
+	}
+	if (m_dragState == DragState::PriceAxis)
 	{
 		float zoomFactor = 1.0f + (delta.y() * 0.01f);
 		m_cam.zoomY *= zoomFactor;
+		
 		if (m_cam.zoomY < 1.0f) m_cam.zoomY = 1.0f;
 	}
-	else
+	else if (m_dragState == DragState::DateAxis)
 	{
-		float candlesPerPixel = m_cam.zoomX / width();
-		float pricePerPixel = m_cam.zoomY / height();
-
-		m_cam.x -= delta.x() * candlesPerPixel; 
-		m_cam.y += delta.y() * pricePerPixel;
+		float zoomFactor = 1.0f + (delta.x() * 0.01f);
+		m_cam.zoomX *= zoomFactor;
+		
+		if (m_cam.zoomX < 5.0f) m_cam.zoomX = 5.0f;
 	}
+	else if (m_dragState == DragState::ChartArea)
+	{
 
-		m_lastMousePos = event->position();
-		update(); 	
+		bool isCtrlPressed = event->modifiers() & Qt::ControlModifier;
+		if (isCtrlPressed)
+			{
+				float zoomFactor = 1.0f + (delta.y() * 0.01f);
+				m_cam.zoomY *= zoomFactor;
+				if (m_cam.zoomY < 1.0f) m_cam.zoomY = 1.0f;
+			}
+		else
+			{
+				float candlesPerPixel = m_cam.zoomX / width();
+				float pricePerPixel = m_cam.zoomY / height();
+
+				m_cam.x -= delta.x() * candlesPerPixel; 
+				m_cam.y += delta.y() * pricePerPixel;
+			}
+	}
+	m_lastMousePos = event->position();
+	update(); 	
 }
 void FastChart::wheelEvent(QWheelEvent* event)
 {
-	bool isCtrlPressed = event->modifiers() & Qt::ControlModifier;
-
 	int delta = event->angleDelta().y();
+	if (delta == 0) return;
+	
 	float zoomInFactor = 0.9f;
 	float zoomOutFactor = 1.1f;
-	if (isCtrlPressed)
+	float zoomFactor = (delta > 0) ? zoomInFactor : zoomOutFactor;
+	
+	DragState hoverZone = getZoneAt(event->position());
+	if (hoverZone == DragState::PriceAxis)
 	{
-		if (delta > 0)
-		{
-			m_cam.zoomY *= zoomInFactor;
-		}
-		else
-		{
-			m_cam.zoomY *= zoomOutFactor;
-		}
+		m_cam.zoomY *= zoomFactor;
 		if (m_cam.zoomY < 1.0f) m_cam.zoomY = 1.0f;
-	} else
+	}
+	else if (hoverZone == DragState::DateAxis)
 	{
-		if (delta > 0)
+		m_cam.zoomX *= zoomFactor;
+		if (m_cam.zoomX < 5.0f) m_cam.zoomX = 5.0f;
+	}
+	else if(hoverZone == DragState::ChartArea)
+	{
+		bool isCtrlPressed = event->modifiers() & Qt::ControlModifier;
+		if (isCtrlPressed)
 		{
-			m_cam.zoomX *= zoomInFactor;
-		}
+			if (delta > 0)
+			{
+				m_cam.zoomY *= zoomInFactor;
+			}
+			else
+			{
+				m_cam.zoomY *= zoomOutFactor;
+			}
+			if (m_cam.zoomY < 1.0f) m_cam.zoomY = 1.0f;
+		} 
 		else
 		{
-			m_cam.zoomX *= zoomOutFactor;
+			if (delta > 0)
+			{
+				m_cam.zoomX *= zoomInFactor;
+			}
+			else
+			{
+				m_cam.zoomX *= zoomOutFactor;
+			}
+			if (m_cam.zoomX < 5.0f) m_cam.zoomX = 5.0f;
 		}
-		if (m_cam.zoomX < 5.0f) m_cam.zoomX = 5.0f;
 	}
 
 	update();
