@@ -3,7 +3,7 @@
 #include"IChartLayer.h"
 #include"QColor"
 #include"QFont"
-
+#include<QDateTime>
 
 class AxisLayer : public IChartLayer
 {

@@ -48,9 +48,6 @@ void AxisLayer::paintUI(const ChartContext& context)
 
 	p->fillRect(QRectF(QPointF(context.widgetWidth - m_priceAxisWidth, 0),QSizeF( m_priceAxisWidth, context.widgetHeight)), QColor(20, 25, 30, 200));
 
-    p->fillRect(context.widgetWidth - m_priceAxisWidth, 0,
-        m_priceAxisWidth, context.widgetHeight, QColor(20, 25, 30, 200));
-
     float rangeY = vp.height();
     if (rangeY <= 0.00001f) rangeY = 1.0f;
 
@@ -72,28 +69,45 @@ void AxisLayer::paintUI(const ChartContext& context)
         // Рисуем текст справа
         p->drawText(context.widgetWidth - m_priceAxisWidth + 5, pixelY + 4, text);
     }
-
-    // --- 2. НИЖНЯЯ ОСЬ (ВРЕМЯ / ИНДЕКС) ---
-    // Рисуем подложку снизу
-    p->fillRect(0, context.widgetHeight - m_timeAxisHeight,
-        context.widgetWidth, m_timeAxisHeight, QColor(20, 25, 30, 200));
+    //Подложка снизу там где время 
+    p->fillRect(0, context.widgetHeight - m_timeAxisHeight, context.widgetWidth, m_timeAxisHeight, QColor(20, 25, 30, 200));
 
     float rangeX = vp.width();
-    float stepX = std::max(1.0f, std::pow(10.0f, std::floor(std::log10(rangeX / 8.0f))));
+    float availableWidth = context.widgetWidth - m_priceAxisWidth;
+
+    int maxLabels = std::max(1, static_cast<int>(availableWidth / 50.0f));
+
+    float minStepX = rangeX / maxLabels;
+
+    float power = std::pow(10.0f, std::floor(std::log10(minStepX > 0 ? minStepX : 1.0f)));
+    float stepX = power;
+    if (minStepX > power * 5.0f) stepX = power * 10.0f;
+    else if (minStepX > power * 2.0f) stepX = power * 5.0f;
+    else if (minStepX > power) stepX = power * 2.0f;
+    
+    if (stepX < 1.0f) stepX = 1.0f;
+
     float startX = std::floor(vp.candleIndexMin / stepX) * stepX;
 
-    // Цикл по индексам свечей
+    QDateTime baseDate = QDateTime::currentDateTime();
+
     for (float x = startX; x <= vp.candleIndexMax; x += stepX)
     {
-        // Переводим индекс (x) в пиксели экрана
+        // Переводим индекс (x) в пиксели экрана (используем availableWidth!)
         float normalizedX = (x - vp.candleIndexMin) / rangeX;
-        int pixelX = normalizedX * context.widgetWidth;
+        int pixelX = normalizedX * availableWidth;
 
-        // Пока что выводим просто индекс свечи (Потом заменим на Дату/Время)
-        QString text = QString::number(x, 'f', 0);
+        // Если дата улетела за правую панель цен - не рисуем её
+        if (pixelX > availableWidth || pixelX < 0) continue;
 
-        // Рисуем текст снизу
-        p->drawText(pixelX - 10, context.widgetHeight - 8, text);
+        // Превращаем индекс в дату (считаем, что 1 свеча = 1 день)
+        QDateTime labelDate = baseDate.addDays(static_cast<int>(x));
+
+        // Форматируем красиво: "dd MMM" даст нам "01 Мар", "15 Апр" и т.д.
+        QString text = labelDate.toString("dd MMM");
+
+        // Рисуем текст снизу (сдвигаем на 20 пикселей влево, чтобы отцентрировать)
+        p->drawText(pixelX - 20, context.widgetHeight - 8, text);
     }
 
 }

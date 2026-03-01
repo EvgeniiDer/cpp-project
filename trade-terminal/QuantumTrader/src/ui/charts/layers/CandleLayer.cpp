@@ -20,6 +20,10 @@ CandleLayer::~CandleLayer()
 		delete m_program;
 	}
 }
+const std::vector<Candle>& CandleLayer::getCandles()const
+{
+	return m_candles;
+}
 void CandleLayer::initializeGL()
 {
 	initializeOpenGLFunctions();
@@ -98,7 +102,7 @@ void CandleLayer::rebuildVBO()
 
 		if (yBodyTop == yBodyBottom)
 		{
-			yBodyTop += 0.0001f;
+			yBodyTop += 0.05f;
 		}
 
 		auto addRect = [&](float left, float right, float bottom, float top)

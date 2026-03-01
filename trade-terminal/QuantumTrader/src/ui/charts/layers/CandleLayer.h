@@ -12,7 +12,7 @@ class CandleLayer : public IChartLayer
 public:
 	CandleLayer();
 	~CandleLayer() override;
-
+	const std::vector<Candle>& getCandles()const;
 	void initializeGL() override;
 	void paintGL(const ChartContext& context) override;
 	void resizeGL(int w, int h) override {};

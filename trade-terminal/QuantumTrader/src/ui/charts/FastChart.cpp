@@ -239,3 +239,44 @@ void FastChart::wheelEvent(QWheelEvent* event)
 	update();
 }
 
+void FastChart::mouseDoubleClickEvent(QMouseEvent* event)
+{
+	if (event->button() == Qt::LeftButton)
+	{
+		DragState clickZone = getZoneAt(event->position());
+		if (clickZone == DragState::PriceAxis || clickZone == DragState::ResizePriceAxis)
+		{
+			autoScaleY();
+		}
+	}
+}
+void FastChart::autoScaleY()
+{
+	const std::vector<Candle>& candles = m_candleLayer->getCandles();
+	if (candles.empty()) return;
+
+	float halfX = m_cam.zoomX / 2.0f;
+	int startIndex = std::max(0, static_cast<int>(m_cam.x - halfX));
+	int endIndex = std::min(static_cast<int>(candles.size()) - 1, static_cast<int>(m_cam.x + halfX));
+
+	if (startIndex > endIndex)return;
+
+	float minPrice = std::numeric_limits<float>::max();
+	float maxPrice = std::numeric_limits<float>::min();
+
+	for(int i = startIndex; i <= endIndex; ++i)
+	{
+		if (candles[i].low < minPrice) minPrice = candles[i].low;
+		if (candles[i].high > maxPrice) maxPrice = candles[i].high;
+	}
+
+	if (minPrice == std::numeric_limits<float>::max()) return;
+
+	m_cam.y = (maxPrice + minPrice) / 2.0f;
+
+	float height = maxPrice - minPrice;
+	if (height == 0.0f) height = 1.0f;
+	m_cam.zoomY = height * 1.1f;
+
+	update();
+}
