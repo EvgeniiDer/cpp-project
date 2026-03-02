@@ -47,7 +47,7 @@ void CandleLayer::initializeGL()
 	rebuildVBO();
 
 }
-void CandleLayer::paintGL(const ChartContext& context)
+void CandleLayer::paintGL(const chart::ChartContext& context)
 {
 	if (m_vertexCount == 0 || !m_program) return;
 

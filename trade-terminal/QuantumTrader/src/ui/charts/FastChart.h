@@ -1,4 +1,4 @@
-#pragma
+#pragma once
 
 #include<QOpenGLWidget>
 #include<QOpenGlFunctions>
@@ -7,9 +7,8 @@
 #include "layers/CandleLayer.h"
 #include "layers/GridLayer.h"
 #include "layers/AxisLayer.h"
-
-
-
+#include "layers/CrosshairLayer.h"
+#include "ChartTypes.h"
 
 class FastChart : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -20,9 +19,7 @@ public:
 	CandleLayer* getCandleLayer()const
 	{
 		return m_candleLayer;
-	}
-
-		
+	}		
 protected:
 	void initializeGL() override;
 	void paintGL() override;
@@ -34,28 +31,20 @@ protected:
 	void mouseReleaseEvent(QMouseEvent* event) override;
 	void mouseDoubleClickEvent(QMouseEvent* event) override;
 
+	void enterEvent(QEnterEvent* event) override;
+	void leaveEvent(QEvent* event) override;
+
 private:
 	void autoScaleY();
-	enum class DragState
-	{
-		None,
-		ChartArea,
-		PriceAxis,
-		DateAxis,
-		ResizePriceAxis
-	};
-	DragState getZoneAt(const QPointF& pos);
-	DragState m_dragState = DragState::None;
+	chart::DragState getZoneAt(const QPointF& pos);
+	chart::DragState m_dragState = chart::DragState::None;
 	QMatrix4x4 calculateMvpMatrix();
 
-	struct CameraStat
-	{
-		float x = 0.0f;
-		float y = 0.0f;
-		float zoomX = 50.0f;
-		float zoomY = 100.0f;
-	} m_cam;
-	
+	chart::ChartSettings m_settings;
+	chart::CameraStat m_cam;
+	QPointF m_mousePixelPos;
+	bool m_isMouseInside = false;
+
 	QPointF m_lastMousePos;
 	bool m_isDragging = false;
 
@@ -65,6 +54,7 @@ private:
 	CandleLayer* m_candleLayer = nullptr;
 	GridLayer* m_gridLayer = nullptr;
 	AxisLayer* m_axisLayer = nullptr;
+	CrosshairLayer* m_crosshairLayer = nullptr;
 };
 
 

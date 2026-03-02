@@ -18,12 +18,12 @@ public:
 	~GridLayer() override;
 
 	void initializeGL() override;
-	void paintGL(const ChartContext& context) override;
+	void paintGL(const chart::ChartContext& context) override;
 
 	void setGridColor(const QColor& color);
 private:
 	void initShaders();
-	void updateGrid(const ChartContext& context);
+	void updateGrid(const chart::ChartContext& context);
 
 	QOpenGLShaderProgram* m_program = nullptr;
 	QOpenGLVertexArrayObject m_vao;

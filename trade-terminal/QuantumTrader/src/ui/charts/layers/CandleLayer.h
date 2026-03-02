@@ -14,7 +14,7 @@ public:
 	~CandleLayer() override;
 	const std::vector<Candle>& getCandles()const;
 	void initializeGL() override;
-	void paintGL(const ChartContext& context) override;
+	void paintGL(const chart::ChartContext& context) override;
 	void resizeGL(int w, int h) override {};
 
 	void setCandles(const std::vector<Candle>& candles);

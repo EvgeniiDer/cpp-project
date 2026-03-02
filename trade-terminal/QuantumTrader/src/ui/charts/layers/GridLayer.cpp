@@ -29,7 +29,7 @@ void GridLayer::initializeGL()
     m_vbo.release();
     
 }
-void GridLayer::paintGL(const ChartContext& context)
+void GridLayer::paintGL(const chart::ChartContext& context)
 {
     updateGrid(context);
     
@@ -49,7 +49,7 @@ void GridLayer::paintGL(const ChartContext& context)
     glDisable(GL_BLEND);
 
 }
-void GridLayer::updateGrid(const ChartContext& context)
+void GridLayer::updateGrid(const chart::ChartContext& context)
 {
     const auto& vp = context.viewport;
     if (qFuzzyCompare(m_lastPriceMin, vp.priceMin) &&

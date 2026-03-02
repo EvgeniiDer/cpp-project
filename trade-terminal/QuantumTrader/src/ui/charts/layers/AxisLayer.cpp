@@ -9,32 +9,7 @@ AxisLayer::AxisLayer()
 	m_font.setFamily("Arial");
 	m_font.setPixelSize(11);
 }
-
-
-void AxisLayer::setTextColor(const QColor& color)
-{
-	m_textColor = color;
-}
-int AxisLayer::getPriceAxisWidth()const
-{
-	return m_priceAxisWidth;
-}
-int AxisLayer::getTimeAxisHeight()const
-{
-    return m_timeAxisHeight;
-}
-
-void AxisLayer::setPriceAxisWidth(int width)
-{
-    m_priceAxisWidth = width;
-}
-
-void AxisLayer::setTimeAxisHeight(int height)
-{
-    m_timeAxisHeight = height;
-}
-
-void AxisLayer::paintUI(const ChartContext& context)
+void AxisLayer::paintUI(const chart::ChartContext& context)
 {
 	QPainter* p = context.painter;
 
@@ -46,7 +21,7 @@ void AxisLayer::paintUI(const ChartContext& context)
 	p->setPen(m_textColor);
 	
 
-	p->fillRect(QRectF(QPointF(context.widgetWidth - m_priceAxisWidth, 0),QSizeF( m_priceAxisWidth, context.widgetHeight)), QColor(20, 25, 30, 200));
+	p->fillRect(QRectF(QPointF(context.widgetWidth - context.priceAxisWidth, 0),QSizeF( context.priceAxisWidth, context.widgetHeight)), QColor(20, 25, 30, 200));
 
     float rangeY = vp.height();
     if (rangeY <= 0.00001f) rangeY = 1.0f;
@@ -67,13 +42,13 @@ void AxisLayer::paintUI(const ChartContext& context)
         QString text = QString::number(y, 'f', 2);
 
         // Рисуем текст справа
-        p->drawText(context.widgetWidth - m_priceAxisWidth + 5, pixelY + 4, text);
+        p->drawText(context.widgetWidth - context.priceAxisWidth + 5, pixelY + 4, text);
     }
     //Подложка снизу там где время 
-    p->fillRect(0, context.widgetHeight - m_timeAxisHeight, context.widgetWidth, m_timeAxisHeight, QColor(20, 25, 30, 200));
+    p->fillRect(0, context.widgetHeight - context.timeAxisHeight, context.widgetWidth, context.timeAxisHeight, QColor(20, 25, 30, 200));
 
     float rangeX = vp.width();
-    float availableWidth = context.widgetWidth - m_priceAxisWidth;
+    float availableWidth = context.widgetWidth - context.priceAxisWidth;
 
     int maxLabels = std::max(1, static_cast<int>(availableWidth / 50.0f));
 
