@@ -31,8 +31,8 @@ void CrosshairLayer::paintUI(const chart::ChartContext& context)
 	const chart::Viewport& vp = context.viewport;
 
 	float normalizedY = (context.widgetHeight - my) / context.widgetHeight;
-	float priceARange = vp.priceMax - vp.priceMin;
-	float priceAtMouse = vp.priceMin + (normalizedY * priceARange);
+	float priceAtRange = vp.priceMax - vp.priceMin;
+	float priceAtMouse = vp.priceMin + (normalizedY * priceAtRange);
 
 	QString priceStr = QString::number(priceAtMouse, 'f', 2);
 	p->setPen(Qt::NoPen);
@@ -57,4 +57,5 @@ void CrosshairLayer::paintUI(const chart::ChartContext& context)
 	p->setPen(Qt::white);
 	p->drawText(mx - 30, context.widgetHeight - 8, timeStr);
 
-	p->restore(); }
+	p->restore();
+}
