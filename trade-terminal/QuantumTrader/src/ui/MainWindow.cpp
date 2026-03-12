@@ -31,15 +31,21 @@ void MainWindow::setupUi()
 {
 	resize(1200, 800);
 	setWindowTitle("QuantumTrader Pro");
-	setDockNestingEnabled(true);
 	setDockOptions(QMainWindow::AnimatedDocks |
 		QMainWindow::AllowNestedDocks |
 		QMainWindow::AllowTabbedDocks |
 		QMainWindow::GroupedDragging);
 
-	QOpenGLWidget* centralDummy = new QOpenGLWidget(this);
-	centralDummy->setStyleSheet("background-color: #121212;");
-	setCentralWidget(centralDummy);
+	//QOpenGLWidget* centralDummy = new QOpenGLWidget(this);
+	//centralDummy->setObjectName("centralDummy");
+	//setCentralWidget(centralDummy);
+
+	QWidget* centralDummy = new QWidget(this);
+	QPalette pal = centralDummy->palette();
+	pal.setColor(QPalette::Window, QColor(Qt::green));
+	centralDummy->setAutoFillBackground(true);
+	centralDummy->setPalette(pal);
+	this->setCentralWidget(centralDummy);
 }
 void MainWindow::createMenus()
 {

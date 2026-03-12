@@ -1,6 +1,7 @@
 #include"WindowManager.h"
 #include<QDebug>
 #include<QDockWidget>
+#include<QLayout>
 
 WindowManager::WindowManager(QMainWindow* mainWindow) : QObject(mainWindow), m_mainWindow(mainWindow), m_windowCounter(1)
 {
@@ -18,20 +19,26 @@ void WindowManager::createWindow(const QString& windowType)
 		qWarning() << "Attempt to create an unknown window type :" << windowType;
 		return;
 	}
-
-    QWidget* widget = m_factories[windowType](m_mainWindow);
-    widget->setMinimumSize(600, 400);
-    // 2. Оборачиваем его в магнитную док-панель
+    
+    
+    
     QDockWidget* dock = new QDockWidget(windowType + " " + QString::number(m_windowCounter++), m_mainWindow);
-    dock->setWidget(widget);
-
-    // 3. Разрешаем отрывать на другой монитор и прилипать к любым краям
     dock->setAllowedAreas(Qt::AllDockWidgetAreas);
-
-    // 4. Очистка памяти при закрытии на крестик
     dock->setAttribute(Qt::WA_DeleteOnClose);
+    
+    QWidget* container = new QWidget(dock);
+    QVBoxLayout* layout = new QVBoxLayout(container);
 
-    // 5. Добавляем график в окно (сначала кидаем все новые графики вправо)
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+
+    QWidget* chartWidget = m_factories[windowType](container);
+    chartWidget->setMinimumSize(600, 400);
+    layout->addWidget(chartWidget);
+
+    // 2. Оборачиваем его в магнитную док-панель
+    dock->setWidget(container);
+
     m_mainWindow->addDockWidget(Qt::LeftDockWidgetArea, dock);
     dock->show();
 }

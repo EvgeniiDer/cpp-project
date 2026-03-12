@@ -49,7 +49,7 @@ void CandleLayer::initializeGL()
 }
 void CandleLayer::paintGL(const chart::ChartContext& context)
 {
-	if (m_vertexCount == 0 || !m_program) return;
+	if (m_vertexCount == 0 || !m_program || !m_program->isLinked()) return;
 
 	m_program->bind();
 	m_program->setUniformValue("mvp_matrix", context.mvpMatrix);

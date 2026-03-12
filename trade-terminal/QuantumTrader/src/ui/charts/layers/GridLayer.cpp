@@ -33,7 +33,7 @@ void GridLayer::paintGL(const chart::ChartContext& context)
 {
     updateGrid(context);
     
-    if (m_vertexCount == 0) return;
+    if (m_vertexCount == 0 || !m_program || !m_program->isLinked()) return;
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

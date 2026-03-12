@@ -9,6 +9,7 @@
 #include "layers/AxisLayer.h"
 #include "layers/CrosshairLayer.h"
 #include "ChartTypes.h"
+#include<atomic>
 
 class FastChart : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -49,6 +50,10 @@ private:
 	bool m_isDragging = false;
 
 	std::vector<std::unique_ptr<IChartLayer>> m_layers;
+	
+	std::atomic<bool> m_isInitialized{ false };
+	std::atomic<bool> m_isLocked{ false };
+
 
 	//LAYERS!!! 
 	CandleLayer* m_candleLayer = nullptr;

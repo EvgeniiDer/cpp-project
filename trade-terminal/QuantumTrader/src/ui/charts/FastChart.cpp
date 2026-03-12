@@ -26,7 +26,9 @@ FastChart::FastChart(QWidget* parent) : QOpenGLWidget(parent)
 }
 FastChart::~FastChart()
 {
-
+	makeCurrent();
+	m_layers.clear();
+	doneCurrent();
 }
 
 void FastChart::initializeGL()
@@ -38,10 +40,15 @@ void FastChart::initializeGL()
 	{
 		layer->initializeGL();
 	}
+	m_isInitialized = true;
 }
 
 void FastChart::paintGL()
 {
+	if (!m_isInitialized || !isValid() || !context())
+	{
+		return;
+	}
 	glClear(GL_COLOR_BUFFER_BIT);
  
 	QMatrix4x4 mvp = calculateMvpMatrix();
