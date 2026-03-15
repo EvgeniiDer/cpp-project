@@ -1,10 +1,11 @@
 #pragma once
 
 #include<QMainWindow>
-
+namespace ads
+{
+	class CDockManager;
+}
 class WindowManager;
-
-class QDockWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -17,7 +18,6 @@ private:
 	void createMenus();
 	void createDockWindows();
 
-	
-	QDockWidget* m_propertiesDock;
+	ads::CDockManager* m_dockManager{ nullptr };
 	WindowManager* m_windowManager;
 };

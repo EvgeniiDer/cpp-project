@@ -5,15 +5,16 @@
 #include<QMenuBar>
 #include<QMenu>
 #include<QAction>
-#include<QMdiSubWindow>
-#include<QMdiArea>
-#include<QDockWidget>
 
+#include <DockManager.h>
+#include <DockWidget.h>
 MainWindow::MainWindow(QWidget* parent): QMainWindow(parent)
 {
 
 	setupUi();
-	m_windowManager = new WindowManager(this);
+	
+	m_dockManager = new ads::CDockManager(this);
+	m_windowManager = new WindowManager(this, m_dockManager);
 
 	m_windowManager->registryFactory("Chart", [](QWidget* parent) -> QWidget*
 		{
@@ -31,21 +32,6 @@ void MainWindow::setupUi()
 {
 	resize(1200, 800);
 	setWindowTitle("QuantumTrader Pro");
-	setDockOptions(QMainWindow::AnimatedDocks |
-		QMainWindow::AllowNestedDocks |
-		QMainWindow::AllowTabbedDocks |
-		QMainWindow::GroupedDragging);
-
-	//QOpenGLWidget* centralDummy = new QOpenGLWidget(this);
-	//centralDummy->setObjectName("centralDummy");
-	//setCentralWidget(centralDummy);
-
-	QWidget* centralDummy = new QWidget(this);
-	QPalette pal = centralDummy->palette();
-	pal.setColor(QPalette::Window, QColor(Qt::green));
-	centralDummy->setAutoFillBackground(true);
-	centralDummy->setPalette(pal);
-	this->setCentralWidget(centralDummy);
 }
 void MainWindow::createMenus()
 {
@@ -62,11 +48,11 @@ void MainWindow::createMenus()
 
 void MainWindow::createDockWindows()
 {
-	m_propertiesDock = new QDockWidget(QObject::tr("Properties"), this);
-	m_propertiesDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
+	ads::CDockWidget* propertiesDock = new ads::CDockWidget(QObject::tr("Properties"));
 	QWidget* emptyWidget = new QWidget();
 	emptyWidget->setStyleSheet("background-color: #1e1e1e;");
-	m_propertiesDock->setWidget(emptyWidget);
-	addDockWidget(Qt::RightDockWidgetArea, m_propertiesDock);
+	propertiesDock->setWidget(emptyWidget);
+
+	m_dockManager->addDockWidget(ads::RightDockWidgetArea, propertiesDock);
 }

@@ -1,44 +1,67 @@
 #include"WindowManager.h"
 #include<QDebug>
-#include<QDockWidget>
 #include<QLayout>
-
-WindowManager::WindowManager(QMainWindow* mainWindow) : QObject(mainWindow), m_mainWindow(mainWindow), m_windowCounter(1)
+#include<DockManager.h>
+#include<DockWidget.h>
+WindowManager::WindowManager(QMainWindow* mainWindow, ads::CDockManager* dockManager) 
+        :QObject(mainWindow), 
+         m_mainWindow(mainWindow), 
+         m_dockManager(dockManager),
+         m_windowCounter(1)
 {
 	Q_ASSERT(m_mainWindow != nullptr);
+    if (!m_dockManager)
+    {
+        qCritical() << QObject::tr("[WindowManager] CRITICAL: CDockManager is nullptr");
+    }
 }
 
 void WindowManager::registryFactory(const QString& windowType, WidgetFactory factory)
 {
+    if (!factory)
+    {
+        qWarning() << QObject::tr("[WindowManager] Attempt to register a null factory for: ") << windowType;
+        return;
+    }
 	m_factories.insert(windowType, factory);
+    qDebug() << QObject::tr("[WindowManager] Factory registered for:") << windowType;
 }
 void WindowManager::createWindow(const QString& windowType)
 {
+    if (!m_dockManager)
+    {
+        qWarning() << QObject::tr("[WindowManager] Cannot create window, DockManager is missing!");
+        return;
+    }
 	if (!m_factories.contains(windowType))
 	{
-		qWarning() << "Attempt to create an unknown window type :" << windowType;
+		qWarning() << QObject::tr("[WindowManager] Attempt to create an unknown window type:") << windowType;
 		return;
 	}
-    
-    
-    
-    QDockWidget* dock = new QDockWidget(windowType + " " + QString::number(m_windowCounter++), m_mainWindow);
-    dock->setAllowedAreas(Qt::AllDockWidgetAreas);
+    QString title = windowType + " " + QString::number(m_windowCounter++);
+       
+    ads::CDockWidget* dock = new ads::CDockWidget(title);
     dock->setAttribute(Qt::WA_DeleteOnClose);
-    
-    QWidget* container = new QWidget(dock);
-    QVBoxLayout* layout = new QVBoxLayout(container);
 
+    QWidget* container = new QWidget();
+    QVBoxLayout* layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
     QWidget* chartWidget = m_factories[windowType](container);
+
+    if (!chartWidget)
+    {
+        qCritical() << QObject::tr("[WindowManager] Factory failed to create widget for: ") << windowType;
+        delete container;
+        container = nullptr;
+        delete dock;
+        dock = nullptr;
+        return;
+    }
     chartWidget->setMinimumSize(600, 400);
     layout->addWidget(chartWidget);
-
-    // 2. Оборачиваем его в магнитную док-панель
     dock->setWidget(container);
-
-    m_mainWindow->addDockWidget(Qt::LeftDockWidgetArea, dock);
+    m_dockManager->addDockWidget(ads::CenterDockWidgetArea, dock);
     dock->show();
 }

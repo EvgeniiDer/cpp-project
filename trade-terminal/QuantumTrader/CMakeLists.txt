@@ -17,6 +17,13 @@ set(CMAKE_PREFIX_PATH "B:/Qt/6.10.1/msvc2022_64")
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGLWidgets)
 
+
+set(BUILD_QA_WITH_QT6 ON CACHE BOOL "Build ADS with Qt6" FORCE)
+# 2. Отключаем примеры, чтобы не тратить время на их компиляцию
+set(BUILD_EXAMPLES OFF CACHE BOOL "Disable ADS examples" FORCE)
+
+add_subdirectory("external/ads")
+
 # --- ПОИСК ФАЙЛОВ ---
 # Мы ищем ВСЕ файлы внутри папки src (рекурсивно).
 # CONFIGURE_DEPENDS заставит Visual Studio увидеть новые файлы, если вы их добавите.
@@ -33,7 +40,9 @@ add_executable(QuantumTrader ${PROJECT_SOURCES} "src/ui/charts/FastChart.h")
 # --- НАСТРОЙКА INCLUDE ПУТЕЙ ---
 # Самый важный момент для вашей структуры!
 # Это позволяет писать #include "core/models/Candle.h" вместо "../core/models/Candle.h"
-target_include_directories(QuantumTrader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(QuantumTrader PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+                                                 "${CMAKE_CURRENT_SOURCE_DIR}/external/ads/src"
+)
 
 # --- ЛИНКОВКА БИБЛИОТЕК ---
 target_link_libraries(QuantumTrader PRIVATE
@@ -41,4 +50,5 @@ target_link_libraries(QuantumTrader PRIVATE
     Qt6::Gui
     Qt6::Widgets
     Qt6::OpenGLWidgets
-)
+    qtadvanceddocking-qt6
+    )
