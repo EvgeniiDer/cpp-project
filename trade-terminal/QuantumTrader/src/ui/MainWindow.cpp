@@ -12,7 +12,9 @@ MainWindow::MainWindow(QWidget* parent): QMainWindow(parent)
 {
 
 	setupUi();
-	
+	QOpenGLWidget* warmUpwidget = new QOpenGLWidget(this);
+	warmUpwidget->setFixedSize(1, 1);
+	warmUpwidget->hide();
 	m_dockManager = new ads::CDockManager(this);
 	m_windowManager = new WindowManager(this, m_dockManager);
 
