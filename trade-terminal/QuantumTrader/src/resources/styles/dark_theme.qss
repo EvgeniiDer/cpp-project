@@ -1,0 +1,5 @@
+ads--CDockAreaTabBar { background-color: #13171E; }
+ads--CDockWidgetTab { background-color: #191E26; color: #7A808C; padding: 6px 15px; border: 1px solid #13171E; border-bottom: none; }
+ads--CDockWidgetTab:hover { background-color: #212833; color: #D1D4DC; }
+ads--CDockWidgetTab[activeTab="true"] { background-color: #191E26; color: #FFFFFF; border-top: 2px solid #2962FF; border-left: 1px solid #2A2F3A; border-right: 1px solid #2A2F3A; }
+ads--CDockOverlay { background-color: rgba(41, 98, 255, 40); border: 2px solid #2962FF; }

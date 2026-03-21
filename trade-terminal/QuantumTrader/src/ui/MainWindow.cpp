@@ -1,6 +1,7 @@
 #include"MainWindow.h"
 #include"charts/FastChart.h"
 #include"WindowManager.h"
+#include"../utils/ThemeManager.h"
 
 #include<QMenuBar>
 #include<QMenu>
@@ -16,6 +17,8 @@ MainWindow::MainWindow(QWidget* parent): QMainWindow(parent)
 	warmUpwidget->setFixedSize(1, 1);
 	warmUpwidget->hide();
 	m_dockManager = new ads::CDockManager(this);
+
+	
 	m_windowManager = new WindowManager(this, m_dockManager);
 
 	m_windowManager->registryFactory("Chart", [](QWidget* parent) -> QWidget*
