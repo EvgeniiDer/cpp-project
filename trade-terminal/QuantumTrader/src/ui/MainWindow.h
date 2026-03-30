@@ -15,6 +15,9 @@ public:
 	~MainWindow() override;
 private:
 	void setupUi();
+	void setupOpenGLWarmup();
+	void setupManagers();
+	void setupTheme();
 	void createMenus();
 	void createDockWindows();
 

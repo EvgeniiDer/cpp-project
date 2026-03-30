@@ -13,18 +13,10 @@ MainWindow::MainWindow(QWidget* parent): QMainWindow(parent)
 {
 
 	setupUi();
-	QOpenGLWidget* warmUpwidget = new QOpenGLWidget(this);
-	warmUpwidget->setFixedSize(1, 1);
-	warmUpwidget->hide();
-	m_dockManager = new ads::CDockManager(this);
+	setupOpenGLWarmup(); //скрытый виджет что бы не забыть для того что бы все сразу началось обрабатываться видеокартой а не центральным процессором что бы не было мерцаиня
+	setupManagers();
+	setupTheme();
 
-	
-	m_windowManager = new WindowManager(this, m_dockManager);
-
-	m_windowManager->registryFactory("Chart", [](QWidget* parent) -> QWidget*
-		{
-			return new FastChart(parent);
-		});
 	createMenus();
 	createDockWindows();
 }
@@ -37,6 +29,36 @@ void MainWindow::setupUi()
 {
 	resize(1200, 800);
 	setWindowTitle("QuantumTrader Pro");
+}
+void MainWindow::setupOpenGLWarmup()
+{
+
+	QOpenGLWidget* warmUpwidget = new QOpenGLWidget(this);
+	warmUpwidget->setFixedSize(1, 1);
+	warmUpwidget->hide();
+}
+void MainWindow::setupTheme()
+{
+	connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, [this](const QString& style)
+		{
+			m_dockManager->setStyleSheet(style);
+
+			// В будущем сюда же добавим:
+			// m_watchlist->setStyleSheet(style);
+			// m_orderBook->setStyleSheet(style);
+		});
+	ThemeManager::instance().setTheme(ThemeManager::Theme::Dark);
+}
+void MainWindow::setupManagers()
+{
+
+	m_dockManager = new ads::CDockManager(this);
+	
+	m_windowManager = new WindowManager(this, m_dockManager);
+	m_windowManager->registryFactory("Chart", [](QWidget* parent) -> QWidget*
+		{
+			return new FastChart(parent);
+		});
 }
 void MainWindow::createMenus()
 {
