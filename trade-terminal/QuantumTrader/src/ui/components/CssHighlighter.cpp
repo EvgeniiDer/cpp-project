@@ -1,7 +1,7 @@
 #include "CssHighlighter.h"
+#include<QDebug>
 
-
-CssHighlighter::CssHighlighter(QTextDocument* parent) : QSyntaxHighlighter(parent)
+CssHighlighter::CssHighlighter(QTextDocument* parent) : QSyntaxHighlighter(parent) 
 {
 	HighlightingRule rule;
 
@@ -35,13 +35,15 @@ CssHighlighter::CssHighlighter(QTextDocument* parent) : QSyntaxHighlighter(paren
     highlightingRules.append(rule);
 }
 
-void CssHighlighter::highlightBlock(const QString& text)
+void CssHighlighter::highlightBlock(const QString& text)  
 {
     for (const HighlightingRule& rule : qAsConst(highlightingRules))
     {
         QRegularExpressionMatchIterator matchIterator = rule.pattern.globalMatch(text);
+        // берет текст с помощью globalMatch(text) сравнивает условия Регулярного выражения rule.pattern и закидывает в итератор
         while (matchIterator.hasNext())
         {
+        // Условия понятно!! Обратить внимание что итератор в начале указывает на начало а не на первое вхождение!!! поэтому следующее инструкци передвигает каретку на один
             QRegularExpressionMatch match = matchIterator.next();
             setFormat(match.capturedStart(), match.capturedLength(), rule.format);
         }

@@ -4,12 +4,12 @@
 
 class QCompleter;
 
-class QssEditor : QPlainTextEdit
+class QssEditor : public QPlainTextEdit
 {
 	Q_OBJECT
 public:
 	explicit QssEditor(QWidget* parent = nullptr);
-	~QssEditor();
+	~QssEditor() {};
 
 	void setCompleter(QCompleter* completer);
 	QCompleter* getCompleter()const;

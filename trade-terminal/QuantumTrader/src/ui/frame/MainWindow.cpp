@@ -1,12 +1,14 @@
 #include"MainWindow.h"
-#include"charts/FastChart.h"
+#include"../charts/FastChart.h"
 #include"WindowManager.h"
-#include"../utils/ThemeManager.h"
-
+#include"../../utils/ThemeManager.h"
+#include"../components/ThemeEditorWidget.h"
+#include<QApplication>
 #include<QMenuBar>
 #include<QMenu>
 #include<QAction>
-
+#include"../../core/models/Candle.h"
+#include"../../utils/MockDataGenerator.h"
 #include <DockManager.h>
 #include <DockWidget.h>
 MainWindow::MainWindow(QWidget* parent): QMainWindow(parent)
@@ -18,7 +20,7 @@ MainWindow::MainWindow(QWidget* parent): QMainWindow(parent)
 	setupTheme();
 
 	createMenus();
-	createDockWindows();
+	//createDockWindows();
 }
 MainWindow::~MainWindow()
 {
@@ -41,7 +43,8 @@ void MainWindow::setupTheme()
 {
 	connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, [this](const QString& style)
 		{
-			m_dockManager->setStyleSheet(style);
+		//	m_dockManager->setStyleSheet(style);
+			qApp->setStyleSheet(style);
 
 			// В будущем сюда же добавим:
 			// m_watchlist->setStyleSheet(style);
@@ -57,7 +60,12 @@ void MainWindow::setupManagers()
 	m_windowManager = new WindowManager(this, m_dockManager);
 	m_windowManager->registryFactory("Chart", [](QWidget* parent) -> QWidget*
 		{
-			return new FastChart(parent);
+			FastChart* chart = new FastChart(parent);
+			std::vector<Candle>baseM1 = MockDataGenerator::generate1MinCandles(100);
+			int currentTimeframe = 5;
+			std::vector<Candle>m5Candles = MockDataGenerator::aggregateCandles(baseM1, 5);
+			chart->loadData(m5Candles);
+			return chart;
 		});
 }
 void MainWindow::createMenus()
@@ -82,4 +90,9 @@ void MainWindow::createDockWindows()
 	propertiesDock->setWidget(emptyWidget);
 
 	m_dockManager->addDockWidget(ads::RightDockWidgetArea, propertiesDock);
+
+
+	ads::CDockWidget* themeDock = new ads::CDockWidget(QObject::tr("Theme Editor"));
+	themeDock->setWidget(new ThemeEditorWidget(themeDock));
+	m_dockManager->addDockWidget(ads::RightDockWidgetArea, themeDock);
 }

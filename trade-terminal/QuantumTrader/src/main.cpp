@@ -4,7 +4,7 @@
 #include<qstring>
 #include"ui/charts/FastChart.h"
 #include"core/models/Candle.h" // <--- Берем Candle отсюда
-#include"ui/MainWindow.h"
+#include"ui/frame/MainWindow.h"
 #include"utils/AppInitializer.h"
 
 int main(int argc, char* argv[])

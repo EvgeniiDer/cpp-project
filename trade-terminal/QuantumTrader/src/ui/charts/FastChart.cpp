@@ -314,3 +314,16 @@ void FastChart::leaveEvent(QEvent* event)
 	update();
 	QWidget::leaveEvent(event);
 }
+void FastChart::loadData(const std::vector<Candle>& data)
+{
+	if (m_candleLayer)
+	{
+		m_candleLayer->setCandles(data);
+		if (!data.empty())
+		{
+			m_cam.x = data.size() - 50.0f;
+			autoScaleY();
+		}
+		update();
+	}
+}

@@ -17,7 +17,6 @@ QssEditor::QssEditor(QWidget* parent) : QPlainTextEdit(parent)
 	this->setFont(font);
 }
 
-QssEditor::~QssEditor(){}
 
 void QssEditor::setCompleter(QCompleter* completer)
 {
@@ -61,6 +60,16 @@ void QssEditor::insertCompletion(const QString& completion)
 	txtCursor.movePosition(QTextCursor::EndOfWord);
 	txtCursor.insertText(completion.right(extra));
 	setTextCursor(txtCursor);
+	/*Как это работает по шагам (Магия синхронизации):
+	В keyPressEvent: Когда ты нажимаешь клавишу, ты сам вызываешь m_completer->setCompletionPrefix(completionPrefix);. Ты буквально "записываешь" в память комплетера: «Сейчас префикс равен "ba"».
+В момент выбора: Ты кликаешь на слово background.
+Выстреливает Сигнал: activated("background").
+Срабатывает твой Слот (Лямбда):
+Он берет "background" (аргумент).
+Он лезет в m_completer и дергает метод completionPrefix().
+Комплетер отвечает: «У меня записано, что префикс "ba"».
+Слот считает: 10 (background) - 2 (ba) = 8.
+Слот отрезает 8 символов справа (ckground) и вставляет их.*/
 }
 QString QssEditor::textUnderCursor()const
 {
@@ -96,15 +105,16 @@ void QssEditor::keyPressEvent(QKeyEvent* event)
 	}
 	QPlainTextEdit::keyPressEvent(event);
 
-	bool isShortcut = ((event->modifiers() & Qt::ControlModifier) && event->key() == Qt::Key_E);
+	bool isShortcut = false;
+	isShortcut = ((event->modifiers() & Qt::ControlModifier) && event->key() == Qt::Key_E);
 	if (!m_completer || (isShortcut && !m_completer->popup()->isVisible()))
 	{
 		return;
 	}
 	static const QString eow("~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-=");
-
-	bool hasModifier = (event->modifiers() != Qt::NoModifier) && !isShortcut;
-
+	
+	bool hasModifier = false;
+	hasModifier = (event->modifiers() != Qt::NoModifier) && !isShortcut;
 	QString completionPrefix = textUnderCursor();
 
 	if (!isShortcut && (hasModifier || event->text().isEmpty() || completionPrefix.length() < 2

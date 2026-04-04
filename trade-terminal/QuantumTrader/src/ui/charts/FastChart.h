@@ -20,7 +20,8 @@ public:
 	CandleLayer* getCandleLayer()const
 	{
 		return m_candleLayer;
-	}		
+	}
+	void loadData(const std::vector<Candle>& dat);
 protected:
 	void initializeGL() override;
 	void paintGL() override;
