@@ -11,9 +11,9 @@ class ActionManager : public QObject
 public:
 	explicit ActionManager(WindowManager* windowManager, QObject* parent = nullptr);
 	void registerActionFactory(const QString& id, ActionFactory factory);
-	QAction* getAction(const QString& id) const;
+	QAction* getAction(const QString& id);
 private:
-	void createAction();
+	WindowManager* m_windowManager;
 	QMap<QString, ActionFactory> m_factories;
 	QMap<QString, QAction*> m_actions;
 

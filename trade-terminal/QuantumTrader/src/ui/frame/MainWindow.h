@@ -6,6 +6,7 @@ namespace ads
 	class CDockManager;
 }
 class WindowManager;
+class ActionManager;
 
 class MainWindow : public QMainWindow
 {
@@ -22,5 +23,6 @@ private:
 	void createDockWindows();
 
 	ads::CDockManager* m_dockManager{ nullptr };
-	WindowManager* m_windowManager;
+	WindowManager* m_windowManager{ nullptr };
+	ActionManager* m_actionManager{ nullptr };
 };

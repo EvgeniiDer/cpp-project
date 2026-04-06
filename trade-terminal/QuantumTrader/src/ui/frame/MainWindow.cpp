@@ -1,6 +1,7 @@
 #include"MainWindow.h"
 #include"../charts/FastChart.h"
-#include"WindowManager.h"
+#include"../frame/WindowManager.h"
+#include"../frame/ActionManager.h"
 #include"../../utils/ThemeManager.h"
 #include"../components/ThemeEditorWidget.h"
 #include<QApplication>
@@ -11,16 +12,19 @@
 #include"../../utils/MockDataGenerator.h"
 #include <DockManager.h>
 #include <DockWidget.h>
-MainWindow::MainWindow(QWidget* parent): QMainWindow(parent)
+MainWindow::MainWindow(QWidget* parent)
+	: QMainWindow(parent)
 {
-
+	m_dockManager = new ads::CDockManager(this);
+	this->setCentralWidget(m_dockManager);
+	m_windowManager = new WindowManager(this, m_dockManager);
+	m_actionManager = new ActionManager(m_windowManager, this);
 	setupUi();
 	setupOpenGLWarmup(); //скрытый виджет что бы не забыть для того что бы все сразу началось обрабатываться видеокартой а не центральным процессором что бы не было мерцаиня
 	setupManagers();
 	setupTheme();
 
 	createMenus();
-	//createDockWindows();
 }
 MainWindow::~MainWindow()
 {
@@ -54,10 +58,6 @@ void MainWindow::setupTheme()
 }
 void MainWindow::setupManagers()
 {
-
-	m_dockManager = new ads::CDockManager(this);
-	
-	m_windowManager = new WindowManager(this, m_dockManager);
 	m_windowManager->registryFactory("Chart", [](QWidget* parent) -> QWidget*
 		{
 			FastChart* chart = new FastChart(parent);
@@ -67,18 +67,28 @@ void MainWindow::setupManagers()
 			chart->loadData(m5Candles);
 			return chart;
 		});
+	m_windowManager->registryFactory("Properties", [](QWidget* parent) ->QWidget*
+		{
+			return new QWidget(parent);
+		});
+	m_windowManager->registryFactory("ThemeEditor", [](QWidget* parent) ->QWidget*
+		{
+			return new ThemeEditorWidget(parent);
+		});
 }
 void MainWindow::createMenus()
 {
-	QMenu* fileMenu = menuBar()->addMenu(QObject::tr("File"));
-	QAction* newChartAct = new QAction(QObject::tr("New Chart"), this);
-	newChartAct->setShortcut(QKeySequence("Ctrl+N"));
+	QMenu* fileMenu = menuBar()->addMenu(QObject::tr("&File"));
 
-	connect(newChartAct, &QAction::triggered, this, [this]()
-		{
-			m_windowManager->createWindow("Chart");
-		});
-	fileMenu->addAction(newChartAct);
+	fileMenu->addAction(m_actionManager->getAction("File.NewChart"));
+	fileMenu->addSeparator();
+
+	QAction* exitAction = fileMenu->addAction(QObject::tr("Exit"));
+	connect(exitAction, &QAction::triggered, this, &QWidget::close);
+
+	QMenu* toolsMenu = menuBar()->addMenu(QObject::tr("&Tools"));
+	toolsMenu->addAction(m_actionManager->getAction("Tools.Properties"));
+	toolsMenu->addAction(m_actionManager->getAction("Tools.ThemeEditor"));
 }
 
 void MainWindow::createDockWindows()
