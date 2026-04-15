@@ -1,15 +1,18 @@
 #pragma once
+#include <QOpenGLWidget>
+#include <QOpenGlFunctions>
+#include <vector>
+#include <memory>
+#include <atomic>
+#include "ChartTypes.h" 
 
-#include<QOpenGLWidget>
-#include<QOpenGlFunctions>
-#include<vector>
-#include<memory>
-#include "layers/CandleLayer.h"
-#include "layers/GridLayer.h"
-#include "layers/AxisLayer.h"
-#include "layers/CrosshairLayer.h"
-#include "ChartTypes.h"
-#include<atomic>
+class CandleLayer;
+class GridLayer;
+class AxisLayer;
+class CrosshairLayer;
+class IChartLayer;
+class LinkManager;
+struct Candle;
 
 class FastChart : public QOpenGLWidget, protected QOpenGLFunctions
 {

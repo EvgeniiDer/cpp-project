@@ -20,7 +20,6 @@ private:
 	void setupManagers();
 	void setupTheme();
 	void createMenus();
-	void createDockWindows();
 
 	ads::CDockManager* m_dockManager{ nullptr };
 	WindowManager* m_windowManager{ nullptr };

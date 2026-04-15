@@ -91,18 +91,3 @@ void MainWindow::createMenus()
 	toolsMenu->addAction(m_actionManager->getAction("Tools.ThemeEditor"));
 }
 
-void MainWindow::createDockWindows()
-{
-
-	ads::CDockWidget* propertiesDock = new ads::CDockWidget(QObject::tr("Properties"));
-	QWidget* emptyWidget = new QWidget();
-	emptyWidget->setStyleSheet("background-color: #1e1e1e;");
-	propertiesDock->setWidget(emptyWidget);
-
-	m_dockManager->addDockWidget(ads::RightDockWidgetArea, propertiesDock);
-
-
-	ads::CDockWidget* themeDock = new ads::CDockWidget(QObject::tr("Theme Editor"));
-	themeDock->setWidget(new ThemeEditorWidget(themeDock));
-	m_dockManager->addDockWidget(ads::RightDockWidgetArea, themeDock);
-}

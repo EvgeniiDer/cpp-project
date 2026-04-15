@@ -12,10 +12,17 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CMAKE_PREFIX_PATH "B:/Qt/6.10.1/msvc2022_64") 
+set(CMAKE_PREFIX_PATH "B:/Qt/6.11.0/msvc2022_64") 
 # Находим пакеты Qt6
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGLWidgets)
+find_package(Qt6 REQUIRED COMPONENTS 
+    Core 
+    Gui 
+    Widgets 
+    OpenGLWidgets
+    Network
+    WebSockets
+)
 
 
 set(BUILD_QA_WITH_QT6 ON CACHE BOOL "Build ADS with Qt6" FORCE)
@@ -50,5 +57,7 @@ target_link_libraries(QuantumTrader PRIVATE
     Qt6::Gui
     Qt6::Widgets
     Qt6::OpenGLWidgets
+    Qt6::Network
+    Qt6::WebSockets
     qtadvanceddocking-qt6
     )

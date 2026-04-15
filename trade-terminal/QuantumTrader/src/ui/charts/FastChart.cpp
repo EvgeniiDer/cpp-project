@@ -2,12 +2,15 @@
 #include<qpainter>
 #include<QMouseEvent>
 #include<qmatrix4x4>
-
+#include"layers/CandleLayer.h"
+#include"layers/GridLayer.h"
+#include"layers/AxisLayer.h"
+#include"layers/CrosshairLayer.h"
+#include"ChartTypes.h"
+#include"../../core/managers/LinkManager.h"
 FastChart::FastChart(QWidget* parent) : QOpenGLWidget(parent)
 {
-	//Settings
 	this->setMouseTracking(true);
-	//candleTest layer
 	std::unique_ptr<GridLayer> gridLayer = std::make_unique<GridLayer>();
 	m_gridLayer = gridLayer.get();// Корчое возвращает нам указатель на кучу где храниться этот обьект замена если бы мы обращались бы к векторму к которому пердаеться управление как m_layers[0]!!!!! Для упрощения пометка использвать в дальнешем
 	m_layers.push_back(std::move(gridLayer));
