@@ -75,7 +75,6 @@ struct ChartInterval
 		}
 		return QString(QObject::tr("%1_%2").arg(unitStr).arg(count));
 	}
-
 	bool operator==(const ChartInterval& other) const
 	{
 		return unit == other.unit && count == other.count;

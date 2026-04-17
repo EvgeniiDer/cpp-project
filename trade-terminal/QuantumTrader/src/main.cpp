@@ -7,12 +7,15 @@
 #include"ui/frame/MainWindow.h"
 #include"utils/AppInitializer.h"
 
+#include"src/core/network/bybit/BybitConnector.h"
 int main(int argc, char* argv[])
 {
     AppInitializer::setupGraphiccs();
 
     QApplication a(argc, argv);
-    MainWindow window;
-    window.show();
+    //MainWindow window;
+    //window.show();
+    BybitConnector byBit;
+    byBit.connect();
     return a.exec();
 }
