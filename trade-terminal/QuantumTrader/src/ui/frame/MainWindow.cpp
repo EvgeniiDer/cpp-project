@@ -1,4 +1,5 @@
 #include"MainWindow.h"
+#include"../src/core/managers/MarketDataManager.h"
 #include"../charts/FastChart.h"
 #include"../frame/WindowManager.h"
 #include"../frame/ActionManager.h"
@@ -8,23 +9,24 @@
 #include<QMenuBar>
 #include<QMenu>
 #include<QAction>
-#include"../../core/models/Candle.h"
-#include"../../utils/MockDataGenerator.h"
+//#include"../../core/models/Candle.h"
 #include <DockManager.h>
 #include <DockWidget.h>
+#include"../src/core/network/bybit/BybitConnector.h"
 MainWindow::MainWindow(QWidget* parent)
 	: QMainWindow(parent)
 {
-	m_dockManager = new ads::CDockManager(this);
-	this->setCentralWidget(m_dockManager);
-	m_windowManager = new WindowManager(this, m_dockManager);
-	m_actionManager = new ActionManager(m_windowManager, this);
+
 	setupUi();
 	setupOpenGLWarmup(); //скрытый виджет что бы не забыть для того что бы все сразу началось обрабатываться видеокартой а не центральным процессором что бы не было мерцаиня
-	setupManagers();
-	setupTheme();
+	setupNetworking();
+	setupUIManagers();
 
+	setupConnections();
+	setupTheme();
 	createMenus();
+
+	m_dataManager->connectTo("Bybit");
 }
 MainWindow::~MainWindow()
 {
@@ -61,10 +63,10 @@ void MainWindow::setupManagers()
 	m_windowManager->registryFactory("Chart", [](QWidget* parent) -> QWidget*
 		{
 			FastChart* chart = new FastChart(parent);
-			std::vector<Candle>baseM1 = MockDataGenerator::generate1MinCandles(100);
-			int currentTimeframe = 5;
-			std::vector<Candle>m5Candles = MockDataGenerator::aggregateCandles(baseM1, 5);
-			chart->loadData(m5Candles);
+			/*	std::vector<Candle>baseM1 = MockDataGenerator::generate1MinCandles(100);
+				int currentTimeframe = 5;
+				std::vector<Candle>m5Candles = MockDataGenerator::aggregateCandles(baseM1, 5);
+				chart->loadData(m5Candles);*/
 			return chart;
 		});
 	m_windowManager->registryFactory("Properties", [](QWidget* parent) ->QWidget*
@@ -90,4 +92,30 @@ void MainWindow::createMenus()
 	toolsMenu->addAction(m_actionManager->getAction("Tools.Properties"));
 	toolsMenu->addAction(m_actionManager->getAction("Tools.ThemeEditor"));
 }
-
+void MainWindow::setupNetworking()
+{
+	m_dataManager = new MarketDataManager(this);
+	m_dataManager->registerFactory("Bybit", [](QObject* parent)
+		{
+			return new BybitConnector(parent);
+		});
+}
+void MainWindow::setupUIManagers()
+{
+	m_dockManager = new ads::CDockManager(this);
+	this->setCentralWidget(m_dockManager);
+	m_windowManager = new WindowManager(this, m_dockManager);
+	m_actionManager = new ActionManager(m_windowManager, this);
+	setupManagers();
+}
+void MainWindow::setupConnections()
+{
+	QObject::connect(m_dataManager, &MarketDataManager::statusChanged, this, [](const QString& ex, const QString& status)
+		{
+			qDebug() << "[Status]" << ex << "->" << status;
+		});
+	QObject::connect(m_dataManager, &MarketDataManager::candlesUpdated, this, [](const QString& ex, const QString& sym, const std::vector<Candle>& candles)
+		{
+			qDebug() << "[Data]" << ex << sym << "Count: " << candles.size();
+		});
+}

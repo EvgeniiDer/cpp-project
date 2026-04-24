@@ -14,9 +14,50 @@ BybitConnector::BybitConnector(QObject* parent) : IExchangeConnector(parent)
 	m_manager = new QNetworkAccessManager(this);
 
 	m_webSocket = new QWebSocket();
-	//connect(m_webSocket, &QWebSocket::connected, this, &ByBitConnector::onWsConnected());
-}
+	//Пометкак QObject::connect вызываем через Родителя потому как у нас пееропределен метод connect!!!!!!! 
+	QObject::connect(m_webSocket, &QWebSocket::connected, this, &BybitConnector::onWsConnected);
+	QObject::connect(m_webSocket, &QWebSocket::disconnected, this, &BybitConnector::onWsDisconected);
+	QObject::connect(m_webSocket, &QWebSocket::textMessageReceived, this, &BybitConnector::onWsTextMessageReceived);
 
+	m_pingTimer = new QTimer(this);
+	QObject::connect(m_pingTimer, &QTimer::timeout, this, &BybitConnector::sendWsPing);
+}
+/**
+ * @brief Initiates a lightweight connection check to Bybit REST API V5.
+ *
+ * This method performs an asynchronous "ping" request to the public Bybit
+ * endpoint `/v5/market/time` to validate network reachability and API
+ * responsiveness before treating the connector as connected.
+ *
+ * Behavior:
+ *  - Emits `stateChanged(ConnectionState::Connecting)` immediately to notify
+ *    listeners that a connection attempt has started.
+ *  - Issues an HTTP GET to `https://api.bybit.com/v5/market/time` using
+ *    `m_manager` (`QNetworkAccessManager`).
+ *  - Connects the returned `QNetworkReply`'s `finished` signal to a lambda
+ *    which forwards the reply to `onPingFinished(reply)` for response parsing
+ *    and final state updates.
+ *
+ * Important implementation details:
+ *  - The request is asynchronous; `connect()` returns immediately.
+ *  - `reply` is managed by Qt; `onPingFinished(...)` calls `reply->deleteLater()`
+ *    after processing to release resources.
+ *  - This routine only performs a REST "ping" / handshake. Opening/configuring
+ *    the WebSocket (and subscribing to topics) is performed by other methods
+ *    such as `subscribeQuotes()` and `onWsConnected()`.
+ *
+ * Error handling:
+ *  - Network and API/JSON parsing failures are handled inside `onPingFinished`
+ *    which will emit `stateChanged(ConnectionState::Error)` when appropriate.
+ *
+ * Threading:
+ *  - Must be invoked from the thread that owns `m_manager` (normally the main
+ *    / GUI thread). Qt network objects are not thread-safe across threads.
+ *
+ * Suggestions / TODOs:
+ *  - Add explicit request timeout handling and optional retry/backoff logic.
+ *  - Allow injecting a mockable `QNetworkAccessManager` for unit testing.
+ */
 void BybitConnector::connect()
 {
 	qDebug() << "[BybitConnector] Initiating a connection to Bybit Api V5... ";
@@ -24,9 +65,9 @@ void BybitConnector::connect()
 
 
 	QNetworkRequest request(QUrl("https://api.bybit.com/v5/market/time"));
-	QNetworkReply* reply = m_manager->get(request);
+	QNetworkReply* reply = m_manager->get(request);// обьект будет наполняться по мере их поступления
 	
-	QObject::connect(reply, QNetworkReply::finished, this, [this, reply]()
+	QObject::connect(reply, &QNetworkReply::finished, this, [this, reply]()
 		{
 			onPingFinished(reply);
 		});
@@ -204,7 +245,7 @@ void BybitConnector::subscribeQuotes(const QString& symbol)
 	m_webSocket->setProperty("currentInterval", intervalToByBitString(testInterval));
 
 	QUrl wsUrl("wss://stream.bybit.com/v5/public/linear");
-	qDebug() << "[Bybit WS] connectin to" << wsUrl.toString();
+	qDebug() << "[Bybit WS] connection to" << wsUrl.toString();
 	m_webSocket->open(wsUrl);
 }
 void BybitConnector::onWsConnected()
@@ -223,4 +264,46 @@ void BybitConnector::onWsConnected()
 	req["args"] = QJsonArray{ topic };
 
 	m_webSocket->sendTextMessage(QJsonDocument(req).toJson(QJsonDocument::Compact));
+}
+void BybitConnector::onWsTextMessageReceived(const QString& message)
+{
+	QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
+	QJsonObject root = doc.object();
+	
+	if (root.contains("op"))
+	{
+		qDebug() << "[Bybit WS System] " << message;
+		return;
+	}
+	
+	if (root.contains("topic") && root.value("topic").toString().startsWith("kline"))
+	{
+		QJsonArray dataArr = root.value("data").toArray();
+		if (!dataArr.isEmpty())
+		{
+			QJsonObject candleData = dataArr.first().toObject();
+
+			QString symbol = root.value("topic").toString().split(".").last();
+			QString closePrice = candleData.value("close").toString();
+			bool isClosed = candleData.value("confirm").toBool();
+
+			qDebug() << "[LIVE]" << symbol
+				<< "| Current Price:" << closePrice
+				<< "| Candle Closed:" << (isClosed ? "YES" : "NO");
+		}
+	}
+}
+void BybitConnector::sendWsPing()
+{
+	QJsonObject pingReq;
+	pingReq["req-id"] = "ping_" + QString::number(QDateTime::currentMSecsSinceEpoch());
+	pingReq["op"] = "ping";
+
+	m_webSocket->sendTextMessage(QJsonDocument(pingReq).toJson(QJsonDocument::Compact));
+}
+void BybitConnector::onWsDisconected()
+{
+	qDebug() << "[Bybit WS] Disconnected. Error: " << m_webSocket->errorString();
+	m_pingTimer->stop();
+	emit stateChanged(ConnectionState::Disconnected);
 }

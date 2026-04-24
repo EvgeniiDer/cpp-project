@@ -1,8 +1,7 @@
 #pragma once
-
 #include<QString>
 #include<cstdint>
-
+#include"../src/core/models/Candle.h"
 
 struct ChartInterval
 {
@@ -73,7 +72,7 @@ struct ChartInterval
 			break;
 
 		}
-		return QString(QObject::tr("%1_%2").arg(unitStr).arg(count));
+		return QString("%1_%2").arg(unitStr).arg(count);
 	}
 	bool operator==(const ChartInterval& other) const
 	{
@@ -85,17 +84,6 @@ struct ChartInterval
 	}
 
 };
-
-struct Candle
-{
-	int64_t timestamp;
-	double open;
-	double high;
-	double low;
-	double close;
-	double volume;
-};
-
 enum class ConnectionState
 {
 	Disconnected,

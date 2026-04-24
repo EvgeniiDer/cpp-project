@@ -7,6 +7,8 @@ namespace ads
 }
 class WindowManager;
 class ActionManager;
+class BybitConnector;
+class MarketDataManager;
 
 class MainWindow : public QMainWindow
 {
@@ -24,4 +26,10 @@ private:
 	ads::CDockManager* m_dockManager{ nullptr };
 	WindowManager* m_windowManager{ nullptr };
 	ActionManager* m_actionManager{ nullptr };
+	BybitConnector* m_connector{ nullptr };
+	MarketDataManager* m_dataManager{ nullptr };
+
+	void setupNetworking();
+	void setupUIManagers();
+	void setupConnections();
 };

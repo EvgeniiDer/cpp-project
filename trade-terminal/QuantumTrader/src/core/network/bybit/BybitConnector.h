@@ -21,8 +21,8 @@ private slots:
 	void onPingFinished(QNetworkReply* reply);
 	void onWsConnected();
 	void onWsDisconected();
-	//void onWsTextMessageReceived(const QString& message);
-	//void sendWsPing();
+	void onWsTextMessageReceived(const QString& message);
+	void sendWsPing();
 private:
 	QWebSocket* m_webSocket;
 	QNetworkAccessManager* m_manager;

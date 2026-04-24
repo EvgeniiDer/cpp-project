@@ -11,6 +11,8 @@ struct Candle
 	double low;        // Lowest price
 	double close;      // Closing price
 	double volume;     // Trading volume
+
+	Candle() = default;
 	Candle(int64_t ts, double o, double h, double l, double c, double v)
 		: timestamp(ts), open(o), high(h), low(l), close(c), volume(v)
 	{

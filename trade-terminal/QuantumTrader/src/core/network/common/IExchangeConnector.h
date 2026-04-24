@@ -9,7 +9,7 @@ class IExchangeConnector : public QObject
 {
 	Q_OBJECT
 public:
-	
+	explicit IExchangeConnector(QObject* parent) : QObject(parent){}
 	virtual ~IExchangeConnector() = default;
 
 	virtual void connect() = 0;

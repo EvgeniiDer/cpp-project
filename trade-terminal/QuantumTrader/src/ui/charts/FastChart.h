@@ -12,7 +12,10 @@ class AxisLayer;
 class CrosshairLayer;
 class IChartLayer;
 class LinkManager;
+class MarketDataManager;
+
 struct Candle;
+
 
 class FastChart : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -25,6 +28,7 @@ public:
 		return m_candleLayer;
 	}
 	void loadData(const std::vector<Candle>& dat);
+public slots:
 protected:
 	void initializeGL() override;
 	void paintGL() override;
