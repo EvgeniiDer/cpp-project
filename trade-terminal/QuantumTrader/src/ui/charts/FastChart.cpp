@@ -8,6 +8,8 @@
 #include"layers/CrosshairLayer.h"
 #include"ChartTypes.h"
 #include"../../core/managers/LinkManager.h"
+#include"../src/core/managers/MarketDataManager.h"
+#include"../src/core/network/common/NetworkTypes.h"
 FastChart::FastChart(QWidget* parent) : QOpenGLWidget(parent)
 {
 	this->setMouseTracking(true);
@@ -52,6 +54,10 @@ void FastChart::paintGL()
 	{
 		return;
 	}
+	qDebug() << "[PaintGL Check]"
+		<< "Cam(X,Y):" << m_cam.x << m_cam.y
+		<< "Zoom(X,Y):" << m_cam.zoomX << m_cam.zoomY
+		<< "Candles count:" << (m_candleLayer ? m_candleLayer->getCandles().size() : 0);
 	glClear(GL_COLOR_BUFFER_BIT);
  
 	QMatrix4x4 mvp = calculateMvpMatrix();
@@ -111,6 +117,9 @@ QMatrix4x4 FastChart::calculateMvpMatrix()
 
 	float bottom = m_cam.y - halfY;
 	float top = m_cam.y + halfY;
+	qDebug() << "[MVP Matrix Check]"
+		<< "Ortho bounds: L:" << left << "R:" << right
+		<< "B:" << bottom << "T:" << top;
 	matrix.ortho(left, right, bottom, top, -1.0f, 1.0f);
 	return matrix;
 }
@@ -302,7 +311,10 @@ void FastChart::autoScaleY()
 	float height = maxPrice - minPrice;
 	if (height == 0.0f) height = 1.0f;
 	m_cam.zoomY = height * 1.1f;
-
+	
+	qDebug() << "[AutoScale] Success!"
+		<< "MinPrice:" << minPrice << "MaxPrice:" << maxPrice
+		<< "New CamY:" << m_cam.y << "New ZoomY:" << m_cam.zoomY;
 	update();
 }
 
@@ -328,5 +340,24 @@ void FastChart::loadData(const std::vector<Candle>& data)
 			autoScaleY();
 		}
 		update();
+	}
+}
+void FastChart::setContext(MarketDataManager* manager, const QString& exchangeName, const QString& symbol)
+{
+	m_dataManager = manager;
+	m_exchangeName = exchangeName;
+	m_symbol = symbol;
+
+	QObject::connect(m_dataManager, &MarketDataManager::candlesUpdated, this, &FastChart::onCandlesReceived);
+	m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 100);
+}
+
+void FastChart::onCandlesReceived(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles)
+{
+	if (exchangeName == m_exchangeName && symbol == m_symbol)
+	{
+		qDebug() << "[FastChart] Painting: " << symbol;
+		this->loadData(candles);
+		this->update();
 	}
 }

@@ -19,7 +19,8 @@ public:
 private:
 	void setupUi();
 	void setupOpenGLWarmup();
-	void setupManagers();
+	void setupUIManagers();
+
 	void setupTheme();
 	void createMenus();
 
@@ -30,6 +31,6 @@ private:
 	MarketDataManager* m_dataManager{ nullptr };
 
 	void setupNetworking();
-	void setupUIManagers();
+	void setupManagers();
 	void setupConnections();
 };

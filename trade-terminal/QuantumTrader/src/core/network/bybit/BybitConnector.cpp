@@ -202,7 +202,22 @@ void BybitConnector::fetchHistory(const QString& symbol, ChartInterval interval,
 						QJsonArray latestCandle = list.first().toArray();
 						qDebug() << "[HISTORY]" << symbol << "Last Closed Price:" << latestCandle[4].toString();
 					}
-					// TODO: Передать данные в BybitParser и вызвать emit candlesReceived(...)
+					std::vector<Candle> candles;
+					for (int i = list.size() - 1; i >= 0; --i)
+					{
+						QJsonArray candleData = list[i].toArray();
+						Candle candle;
+						candle.timestamp = candleData[0].toString().toLongLong() / 1000; 
+						candle.open = candleData[1].toString().toDouble();
+						candle.high = candleData[2].toString().toDouble();
+						candle.low = candleData[3].toString().toDouble();
+						candle.close = candleData[4].toString().toDouble();
+						candle.volume = candleData[5].toString().toDouble();
+
+						candles.push_back(candle);
+					}
+					qDebug() << "[BybitConnector] Successfully parsed" << candles.size() << "candles";
+					emit candlesReceived(symbol, candles);
 				} else
 				{
 					qDebug() << "[BybitConnector] API Error:" << root.value("retMsg").toString();
@@ -282,14 +297,21 @@ void BybitConnector::onWsTextMessageReceived(const QString& message)
 		if (!dataArr.isEmpty())
 		{
 			QJsonObject candleData = dataArr.first().toObject();
-
 			QString symbol = root.value("topic").toString().split(".").last();
-			QString closePrice = candleData.value("close").toString();
-			bool isClosed = candleData.value("confirm").toBool();
+			Candle liveCandle;
+			liveCandle.timestamp = candleData.value("start").toVariant().toLongLong() / 1000;
 
-			qDebug() << "[LIVE]" << symbol
-				<< "| Current Price:" << closePrice
-				<< "| Candle Closed:" << (isClosed ? "YES" : "NO");
+			liveCandle.open = candleData.value("open").toString().toDouble();
+			liveCandle.high = candleData.value("high").toString().toDouble();
+			liveCandle.low = candleData.value("low").toString().toDouble();
+			liveCandle.close = candleData.value("close").toString().toDouble();
+			liveCandle.volume = candleData.value("volume").toString().toDouble();
+
+			std::vector<Candle> liveUpdate = { liveCandle };
+
+			emit candlesReceived(symbol, liveUpdate);
+
+			qDebug() << "[LIVE]" << symbol << "Price:" << liveCandle.close;
 		}
 	}
 }

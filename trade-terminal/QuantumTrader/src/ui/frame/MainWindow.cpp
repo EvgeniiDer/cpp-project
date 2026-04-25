@@ -58,26 +58,6 @@ void MainWindow::setupTheme()
 		});
 	ThemeManager::instance().setTheme(ThemeManager::Theme::Dark);
 }
-void MainWindow::setupManagers()
-{
-	m_windowManager->registryFactory("Chart", [](QWidget* parent) -> QWidget*
-		{
-			FastChart* chart = new FastChart(parent);
-			/*	std::vector<Candle>baseM1 = MockDataGenerator::generate1MinCandles(100);
-				int currentTimeframe = 5;
-				std::vector<Candle>m5Candles = MockDataGenerator::aggregateCandles(baseM1, 5);
-				chart->loadData(m5Candles);*/
-			return chart;
-		});
-	m_windowManager->registryFactory("Properties", [](QWidget* parent) ->QWidget*
-		{
-			return new QWidget(parent);
-		});
-	m_windowManager->registryFactory("ThemeEditor", [](QWidget* parent) ->QWidget*
-		{
-			return new ThemeEditorWidget(parent);
-		});
-}
 void MainWindow::createMenus()
 {
 	QMenu* fileMenu = menuBar()->addMenu(QObject::tr("&File"));
@@ -104,9 +84,28 @@ void MainWindow::setupUIManagers()
 {
 	m_dockManager = new ads::CDockManager(this);
 	this->setCentralWidget(m_dockManager);
-	m_windowManager = new WindowManager(this, m_dockManager);
+	m_windowManager = new WindowManager(this, m_dataManager, m_dockManager);
 	m_actionManager = new ActionManager(m_windowManager, this);
 	setupManagers();
+}
+void MainWindow::setupManagers()
+{
+	m_windowManager->registryFactory("Chart", [this](QWidget* parent) -> QWidget*
+		{
+			FastChart* chart = new FastChart(parent);
+			chart->setContext(this->m_dataManager, "Bybit", "BTCUSDT");
+			return chart;
+		});
+	m_windowManager->registryFactory("Properties", [](QWidget* parent) -> QWidget*
+		{
+			return new QWidget(parent); // Replace with your actual PropertiesWidget later
+		});
+
+	// Register Theme Editor (Don't forget this!)
+	m_windowManager->registryFactory("ThemeEditor", [](QWidget* parent) -> QWidget*
+		{
+			return new ThemeEditorWidget(parent);
+		});
 }
 void MainWindow::setupConnections()
 {

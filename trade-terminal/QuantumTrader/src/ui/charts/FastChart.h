@@ -28,7 +28,9 @@ public:
 		return m_candleLayer;
 	}
 	void loadData(const std::vector<Candle>& dat);
+	void setContext(MarketDataManager* manager, const QString& exchangeName, const QString& symbol);
 public slots:
+	void onCandlesReceived(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles);
 protected:
 	void initializeGL() override;
 	void paintGL() override;
@@ -68,6 +70,10 @@ private:
 	GridLayer* m_gridLayer = nullptr;
 	AxisLayer* m_axisLayer = nullptr;
 	CrosshairLayer* m_crosshairLayer = nullptr;
+
+	MarketDataManager* m_dataManager{ nullptr };
+	QString m_exchangeName;
+	QString m_symbol;
 };
 
 

@@ -3,11 +3,13 @@
 #include<QLayout>
 #include<DockManager.h>
 #include<DockWidget.h>
-WindowManager::WindowManager(QMainWindow* mainWindow, ads::CDockManager* dockManager) 
+#include"../src/core/managers/MarketDataManager.h"
+WindowManager::WindowManager(QMainWindow* mainWindow,MarketDataManager* dataManager ,ads::CDockManager* dockManager) 
         :QObject(mainWindow), 
          m_mainWindow(mainWindow), 
+         m_dataManager(dataManager),
          m_dockManager(dockManager),
-         m_windowCounter(1)
+         m_windowCounter(1)// ДЛЯ Счетчика Открывших графиков
 {
 	Q_ASSERT(m_mainWindow != nullptr);
     if (!m_dockManager)
