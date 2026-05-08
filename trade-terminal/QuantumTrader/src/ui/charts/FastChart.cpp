@@ -334,10 +334,12 @@ void FastChart::loadData(const std::vector<Candle>& data)
 	if (m_candleLayer)
 	{
 		m_candleLayer->setCandles(data);
-		if (!data.empty())
+		if (!data.empty() && !m_isHistoryLoaded)
 		{
 			m_cam.x = data.size() - 50.0f;
 			autoScaleY();
+			
+			m_isHistoryLoaded = true;
 		}
 		update();
 	}
@@ -347,17 +349,27 @@ void FastChart::setContext(MarketDataManager* manager, const QString& exchangeNa
 	m_dataManager = manager;
 	m_exchangeName = exchangeName;
 	m_symbol = symbol;
+	m_isHistoryLoaded = false;
 
 	QObject::connect(m_dataManager, &MarketDataManager::candlesUpdated, this, &FastChart::onCandlesReceived);
-	m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 100);
+	m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 90000);//RestApi request
+	m_dataManager->subcribeToStream(m_exchangeName, m_symbol);//WebSocket request
 }
 
 void FastChart::onCandlesReceived(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles)
 {
-	if (exchangeName == m_exchangeName && symbol == m_symbol)
+	if (symbol != m_symbol || exchangeName != m_exchangeName)
+	{
+		return;
+	}
+	if (candles.size() == 1)
+	{
+		m_candleLayer->updateLiveCnadle(candles[0]);
+	}
+	else
 	{
 		qDebug() << "[FastChart] Painting: " << symbol;
 		this->loadData(candles);
-		this->update();
 	}
+	this->update();
 }

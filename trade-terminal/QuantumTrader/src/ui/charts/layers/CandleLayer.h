@@ -18,6 +18,7 @@ public:
 	void resizeGL(int w, int h) override {};
 
 	void setCandles(const std::vector<Candle>& candles);
+	void updateLiveCnadle(const Candle& liveCandle);
 private:
 	void initShaders();
 	void rebuildVBO();
@@ -29,4 +30,5 @@ private:
 
 	int m_vertexCount = 0;
 	std::vector<Candle> m_candles;
+	bool m_needRebuild = false;
 };

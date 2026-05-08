@@ -77,3 +77,16 @@ void MarketDataManager::requestHistory(const QString& exchangeName, const QStrin
 	}
 
 }
+
+void MarketDataManager::subcribeToStream(const QString& exchangeName, const QString& symbol)
+{
+	if (m_activeConnectors.contains(exchangeName))
+	{
+		qDebug() << "[DataManager] Subscribing to WS stream for" << symbol << " on " << exchangeName;
+		m_activeConnectors[exchangeName]->subscribeQuotes(symbol);
+	}
+	else
+	{
+		qDebug() << "[DataManager] Cannot subscribe: Connector" << exchangeName << "is not active.";
+	}
+}

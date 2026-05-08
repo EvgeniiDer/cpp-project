@@ -49,6 +49,12 @@ void CandleLayer::initializeGL()
 }
 void CandleLayer::paintGL(const chart::ChartContext& context)
 {
+	if (m_needRebuild)
+	{
+		rebuildVBO();
+		m_needRebuild = false;
+	}
+	//----------------------------------------------------------
 	if (m_vertexCount == 0 || !m_program || !m_program->isLinked()) return;
 
 	m_program->bind();
@@ -64,6 +70,24 @@ void CandleLayer::setCandles(const std::vector<Candle>& candles)
 	m_candles = candles;
 	rebuildVBO();
 }
+
+void CandleLayer::updateLiveCnadle(const Candle& liveCandle)
+{
+	if (m_candles.empty())
+	{
+		m_candles.push_back(liveCandle);
+	} else{
+		if (m_candles.back().timestamp == liveCandle.timestamp)
+		{
+			m_candles.back() = liveCandle;
+		} else
+		{
+			m_candles.push_back(liveCandle);
+		}
+	}
+	m_needRebuild = true;
+}
+
 void CandleLayer::rebuildVBO()
 {
 	if (!m_vbo.isCreated())

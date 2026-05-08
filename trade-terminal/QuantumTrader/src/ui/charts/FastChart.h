@@ -74,6 +74,7 @@ private:
 	MarketDataManager* m_dataManager{ nullptr };
 	QString m_exchangeName;
 	QString m_symbol;
+	bool m_isHistoryLoaded = false;
 };
 
 

@@ -21,6 +21,7 @@ public:
 	void registerFactory(const QString& exchangeName, ConnectorFactory factory);
 	void connectTo(const QString& exchangeName);
 	void requestHistory(const QString& exchangeName, const QString& symbol, ChartInterval interval, int limit);
+	void subcribeToStream(const QString& exchangeName, const QString& symbol);
 signals:
 	void candlesUpdated(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles);
 	void statusChanged(const QString& exchangeName, const QString& statusMsg);
