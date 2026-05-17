@@ -9,6 +9,14 @@ CandleHistoryManager::CandleHistoryManager(IExchangeConnector* connector, QObjec
 }
 void CandleHistoryManager::loadDeepHistory(const QString& symbol, ChartInterval interval, int targetLimit)
 {
+	if (m_currentSymbol == symbol && !m_accumulated.empty())
+	{
+		qDebug() << "[HistoryManager] Lazy load requested.Fetching older data...";
+		qint64 oldestTimeMs = m_accumulated.front().timestamp * 1000;
+
+		m_connector->fetchHistory(symbol, interval, 1000, oldestTimeMs - 1);
+		return;
+	}
 	m_currentSymbol = symbol;
 	m_currentInterval = interval;
 	m_targetLimit = targetLimit;
@@ -35,18 +43,7 @@ void CandleHistoryManager::onChunkLoaded(const QString& symbol, const std::vecto
 		}
 		return;
 	}
-
-	qint64 oldestTimeMs = chunk.front().timestamp * 1000;
 	m_accumulated.insert(m_accumulated.begin(), chunk.begin(), chunk.end());
-	qDebug() << "[HistoryManager] Progress: " << m_accumulated.size() << "/" << m_targetLimit;
-	
-	if (m_accumulated.size() >= static_cast<size_t>(m_targetLimit) || chunk.size() < 1000)
-	{
-		qDebug() << "[HistoryManager] Done! Total:" << m_accumulated.size();
-		emit historyReady(m_currentSymbol, m_accumulated);
-	} else
-	{
-		int nextLimit = std::min(1000, m_targetLimit - static_cast<int>(m_accumulated.size()));//TODO Приведение типа!!!!!!ИЗМЕНИТЬ
-		m_connector->fetchHistory(m_currentSymbol, m_currentInterval, nextLimit, oldestTimeMs - 1);
-	}
+	qDebug() << "[HistoryManager] Buffer size updated:" << m_accumulated.size();
+	emit historyReady(m_currentSymbol, m_accumulated);
 }

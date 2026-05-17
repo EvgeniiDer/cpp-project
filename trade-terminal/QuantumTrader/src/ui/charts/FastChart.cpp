@@ -216,6 +216,14 @@ void FastChart::mouseMoveEvent(QMouseEvent* event)
 
 				m_cam.x -= delta.x() * candlesPerPixel; 
 				m_cam.y += delta.y() * pricePerPixel;
+				float halfX = m_cam.zoomX / 2.0f;
+				float leftVisibleIndex = m_cam.x - halfX;
+				if (leftVisibleIndex < 100 && !m_isLoadingHistory && m_isHistoryLoaded)
+				{
+					qDebug() << "[FastChart] Left edge reached! Requesting older candles....";
+					m_isLoadingHistory = true;
+					m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 1000);
+				}
 			}
 	}
 	m_lastMousePos = event->position();
@@ -334,14 +342,24 @@ void FastChart::loadData(const std::vector<Candle>& data)
 	if (m_candleLayer)
 	{
 		m_candleLayer->setCandles(data);
-		if (!data.empty() && !m_isHistoryLoaded)
+		if (!data.empty())
 		{
-			m_cam.x = data.size() - 50.0f;
-			autoScaleY();
-			
-			m_isHistoryLoaded = true;
-		}
-		update();
+			if (!m_isHistoryLoaded)
+			{
+				m_cam.x = static_cast<float>(data.size()) - 50.0f;
+				autoScaleY();
+				m_isHistoryLoaded = true;
+			} else
+			{
+				float halfX = m_cam.zoomX / 2.0f;
+				if (m_cam.x + halfX >= static_cast<float>(data.size()) - 100.0f)
+				{
+					m_cam.x = static_cast<float>(data.size()) - 50.0f;
+					autoScaleY();
+				}
+			}
+		} 
+	update();
 	}
 }
 void FastChart::setContext(MarketDataManager* manager, const QString& exchangeName, const QString& symbol)
@@ -352,7 +370,7 @@ void FastChart::setContext(MarketDataManager* manager, const QString& exchangeNa
 	m_isHistoryLoaded = false;
 
 	QObject::connect(m_dataManager, &MarketDataManager::candlesUpdated, this, &FastChart::onCandlesReceived);
-	m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 1000000);//RestApi request
+	m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 1500);//RestApi request
 	m_dataManager->subcribeToStream(m_exchangeName, m_symbol);//WebSocket request
 }
 
@@ -364,12 +382,29 @@ void FastChart::onCandlesReceived(const QString& exchangeName, const QString& sy
 	}
 	if (candles.size() == 1)
 	{
+		// 🚀 ОБРАБОТКА ОНЛАЙН ТИКОВ (WebSocket)
+		size_t oldSize = m_candleLayer->getCandles().size();
 		m_candleLayer->updateLiveCnadle(candles[0]);
+		size_t newSize = m_candleLayer->getCandles().size();
+
+		// Если родилась НОВАЯ свеча (минута закрылась), сдвигаем камеру вперед вслед за рынком
+		if (newSize > oldSize)
+		{
+			m_cam.x += static_cast<float>(newSize - oldSize);
+		}
 	}
 	else
 	{
 		qDebug() << "[FastChart] Painting: " << symbol;
+		size_t oldSize = m_candleLayer->getCandles().size();
 		this->loadData(candles);
+		size_t newSize = candles.size();
+		if (oldSize > 0 && newSize > oldSize)
+		{
+			m_cam.x += static_cast<float>(newSize - oldSize);
+		}
+		m_isLoadingHistory = false;
+
 	}
 	this->update();
 }

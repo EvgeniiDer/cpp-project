@@ -7,6 +7,7 @@
 #include <QOpenGLVertexArrayObject>
 #include <vector>
 
+struct CandleVertexData;
 class CandleLayer : public IChartLayer
 {
 public:
@@ -21,7 +22,8 @@ public:
 	void updateLiveCnadle(const Candle& liveCandle);
 private:
 	void initShaders();
-	void rebuildVBO();
+	//void rebuildVBO();
+	void prepareVisibleVertices(const chart::ChartContext& context, std::vector<CandleVertexData>& outVertices);
 
 	QOpenGLShaderProgram* m_program = nullptr;
 	QOpenGLVertexArrayObject m_vao;

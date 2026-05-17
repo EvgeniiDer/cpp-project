@@ -45,6 +45,7 @@ protected:
 	void enterEvent(QEnterEvent* event) override;
 	void leaveEvent(QEvent* event) override;
 
+
 private:
 	void autoScaleY();
 	chart::DragState getZoneAt(const QPointF& pos);
@@ -75,6 +76,7 @@ private:
 	QString m_exchangeName;
 	QString m_symbol;
 	bool m_isHistoryLoaded = false;
+	bool m_isLoadingHistory = false;
 };
 
 
