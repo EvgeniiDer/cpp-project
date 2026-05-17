@@ -3,13 +3,11 @@
 #include<QNetworkReply>
 #include<QTimer>
 #include<QWebSocket>
+#include"ByBitParser.h"
 
-#include<QJsonDocument>
-#include<QJsonValue>
-#include<QJsonObject>
 #include<QUrlQuery>
-#include<QJsonArray>
 #include<QPointer>
+//#include"../../events/EventBus.h"
 BybitConnector::BybitConnector(QObject* parent) : IExchangeConnector(parent)
 {
 	m_manager = new QNetworkAccessManager(this);
@@ -77,36 +75,17 @@ void BybitConnector::onPingFinished(QNetworkReply* reply)
 {
 	if (reply->error() == QNetworkReply::NoError)
 	{
-		QByteArray responseData = reply->readAll();
-		QJsonParseError parseError;
-		QJsonDocument jsonDoc = QJsonDocument::fromJson(responseData, &parseError);
-		
-		if (jsonDoc.isNull() || parseError.error != QJsonParseError::NoError)
+		QString errorMsg;
+		int retCode = ByBitParser::parserPingResponse(reply->readAll(), errorMsg);
+		if (retCode == 0)
 		{
-			qDebug() << "[ByBitConnector] CRITICAL ERROR parsing JSON: " << parseError.errorString();
-			qDebug() << "[BybitConnector] Raw response : " << responseData;
+			qDebug() << "[ByBitConnector] SUCCESS! Connection with Bybit established.";
+			emit stateChanged(ConnectionState::Connected);
+		} else
+		{
+			qDebug() << "[ByBitConnector] API REJECTED! Reason:" << errorMsg;
 			emit stateChanged(ConnectionState::Error);
-			reply->deleteLater();
-			return;
 		}
-
-		if (jsonDoc.isObject())
-		{
-			QJsonObject root = jsonDoc.object();
-			int retCode = root.value("retCode").toInt();
-
-			if (retCode == 0)
-			{
-				qDebug() << "[ByBitConnector] SUCCESS! Connection with Bybit established.";
-				emit stateChanged(ConnectionState::Connected);
-			} else
-			{
-				QString errorMsg = root.value("retMsg").toString();
-				qDebug() << "[ByBitConnector] API REJECTED! Code:" << retCode << "Reason:" << errorMsg;
-				emit stateChanged(ConnectionState::Error);
-			}
-		}
-
 	} else
 	{
 		qDebug() << "[ByBitConnector] NETWORK ERROR:" << reply->errorString();
@@ -166,46 +145,7 @@ void BybitConnector::fetchHistory(const QString& symbol, ChartInterval interval,
 			QScopedPointer<QNetworkReply, QScopedPointerDeleteLater> replyGuard(reply);
 
 			if (!self || reply->error() != QNetworkReply::NoError) return;
-
-			QJsonObject root = QJsonDocument::fromJson(reply->readAll()).object();
-			if (root.value("retCode").toInt() != 0) return;
-
-			QJsonArray list = root["result"].toObject()["list"].toArray();
-			std::vector<Candle> chunk;
-			chunk.reserve(list.size());
-			/*JSON строка от Bybit
-					↓
-			QJsonDocument::fromJson()   — парсим текст в дерево объектов
-					↓
-			QJsonObject root            — корень { }
-					↓
-			root["result"].toObject()   — достаём вложенный { }
-					↓
-			["list"].toArray()          — достаём массив свечей [ ]
-					↓
-			list[i].toArray()           — достаём одну свечу [ ]
-					↓
-			c[0].toString().toLongLong() / 1000  — timestamp мс → сек
-			c[1].toString().toDouble()           — open
-			c[2].toString().toDouble()           — high
-			c[3].toString().toDouble()           — low
-			c[4].toString().toDouble()           — close
-			c[5].toString().toDouble()           — volume*/
-			for (int i = list.size() - 1; i >= 0; --i)
-			{
-				QJsonArray c = list[i].toArray();
-				if (c.size() < 6) continue;
-
-				Candle candle;
-				candle.timestamp = c[0].toString().toLongLong() / 1000;
-				candle.open = c[1].toString().toDouble();
-				candle.high = c[2].toString().toDouble();
-				candle.low = c[3].toString().toDouble();
-				candle.close = c[4].toString().toDouble();
-				candle.volume = c[5].toString().toDouble();
-				chunk.push_back(candle);
-			}
-
+			std::vector<Candle>chunk = ByBitParser::parseHistory(reply->readAll());
 			emit self->historyChunkLoaded(symbol, chunk);
 		});
 	
@@ -252,57 +192,24 @@ void BybitConnector::onWsConnected()
 	QString symbol = m_webSocket->property("currentSymbol").toString();
 	QString interval = m_webSocket->property("currentInterval").toString();
 
-	QString topic = QString("kline.%1.%2").arg(interval).arg(symbol);
-
-	QJsonObject req;
-	req["req_id"] = "sub_" + symbol;
-	req["op"] = "subscribe";
-	req["args"] = QJsonArray{ topic };
-
-	m_webSocket->sendTextMessage(QJsonDocument(req).toJson(QJsonDocument::Compact));
+	QString message = ByBitParser::buildSubscriptionRequest(symbol, interval);
+	m_webSocket->sendTextMessage(message);
 }
 void BybitConnector::onWsTextMessageReceived(const QString& message)
 {
-	QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
-	QJsonObject root = doc.object();
-	
-	if (root.contains("op"))
+	QString symbol;
+	std::optional<Candle> liveCandle = ByBitParser::parseLiveCandle(message, symbol);
+	if (liveCandle.has_value())
 	{
-		qDebug() << "[Bybit WS System] " << message;
-		return;
-	}
-	
-	if (root.contains("topic") && root.value("topic").toString().startsWith("kline"))
-	{
-		QJsonArray dataArr = root.value("data").toArray();
-		if (!dataArr.isEmpty())
-		{
-			QJsonObject candleData = dataArr.first().toObject();
-			QString symbol = root.value("topic").toString().split(".").last();
-			Candle liveCandle;
-			liveCandle.timestamp = candleData.value("start").toVariant().toLongLong() / 1000;
-
-			liveCandle.open = candleData.value("open").toString().toDouble();
-			liveCandle.high = candleData.value("high").toString().toDouble();
-			liveCandle.low = candleData.value("low").toString().toDouble();
-			liveCandle.close = candleData.value("close").toString().toDouble();
-			liveCandle.volume = candleData.value("volume").toString().toDouble();
-
-			std::vector<Candle> liveUpdate = { liveCandle };
-
-			emit candlesReceived(symbol, liveUpdate);
-
-			qDebug() << "[LIVE]" << symbol << "Price:" << liveCandle.close;
-		}
+		std::vector<Candle> liveUpdate = { liveCandle.value() };
+		emit candlesReceived(symbol, liveUpdate);
+		qDebug() << "[LIVE]" << symbol << "Price:" << liveCandle->close;
 	}
 }
 void BybitConnector::sendWsPing()
 {
-	QJsonObject pingReq;
-	pingReq["req-id"] = "ping_" + QString::number(QDateTime::currentMSecsSinceEpoch());
-	pingReq["op"] = "ping";
-
-	m_webSocket->sendTextMessage(QJsonDocument(pingReq).toJson(QJsonDocument::Compact));
+	QString message = ByBitParser::buildPinqRequest();
+	m_webSocket->sendTextMessage(message);
 }
 void BybitConnector::onWsDisconected()
 {
