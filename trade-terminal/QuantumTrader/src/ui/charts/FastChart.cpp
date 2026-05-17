@@ -352,7 +352,7 @@ void FastChart::setContext(MarketDataManager* manager, const QString& exchangeNa
 	m_isHistoryLoaded = false;
 
 	QObject::connect(m_dataManager, &MarketDataManager::candlesUpdated, this, &FastChart::onCandlesReceived);
-	m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 90000);//RestApi request
+	m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 1000000);//RestApi request
 	m_dataManager->subcribeToStream(m_exchangeName, m_symbol);//WebSocket request
 }
 

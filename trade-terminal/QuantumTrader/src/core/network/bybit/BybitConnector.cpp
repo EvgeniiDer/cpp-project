@@ -9,6 +9,7 @@
 #include<QJsonObject>
 #include<QUrlQuery>
 #include<QJsonArray>
+#include<QPointer>
 BybitConnector::BybitConnector(QObject* parent) : IExchangeConnector(parent)
 {
 	m_manager = new QNetworkAccessManager(this);
@@ -139,95 +140,75 @@ QString BybitConnector::intervalToByBitString(const ChartInterval& interval)cons
 			return "1";
 	}
 }
-/**
- * @brief Fetch historical K-line (candlestick) data from Bybit REST API v5.
- *
- * Notes:
- * - The Bybit V5 K-line endpoint does not support Tick or Range intervals.
- *   These interval types must be produced by aggregating public trades (trade stream).
- * - Bybit V5 limits the number of candles per request (typically max 1000).
- *
- * @param symbol   Trading pair symbol, e.g. "BTCUSDT".
- * @param interval Timeframe to request. Uses `ChartInterval` (Minute/Hour/Day/Week/Month).
- *                 For Hour and Minute the function converts to Bybit's minute-based interval string.
- *                 Tick and Range units are not supported and will be rejected by this function.
- * @param limit    Number of candles to retrieve (server-enforced maximum; see Bybit docs).
- *
- * Behavior:
- * - Builds a GET request to `https://api.bybit.com/v5/market/kline` with query parameters:
- *   `category=linear`, `symbol`, `interval` and `limit`.
- * - On successful HTTP + API response (`retCode == 0`) the function extracts `result.list`
- *   (an array of candles) and logs the most recent closed candle price.
- * - On failure it logs the relevant API or network error.
- *
- * TODO:
- * - Parse `result.list` into the project's internal candle structure, pass it to `BybitParser`
- *   and emit `candlesReceived(...)`.
- */
-void BybitConnector::fetchHistory(const QString& symbol, ChartInterval interval, int limit)
+void BybitConnector::fetchHistory(const QString& symbol, ChartInterval interval, int limit, qint64 endTime)
 {
-	qDebug() << "[BybitConnector] Request history (" << limit << "candles) for" << symbol;
-
-	if(interval.unit == ChartInterval::Unit::Tick || interval.unit == ChartInterval::Unit::Range)
-	{ 
-		qDebug() << "[BybitConnector] ERROR: Ticks and Ranges are not yet supported in fetchHistory!";
-		return;
-	}
-	QUrl url("https://api.bybit.com/v5/market/kline");//эндпоинт(Endpoint)
 	QUrlQuery query;
 	query.addQueryItem("category", "linear");
 	query.addQueryItem("symbol", symbol);
 	query.addQueryItem("interval", intervalToByBitString(interval));
 	query.addQueryItem("limit", QString::number(limit));
+
+	if (endTime > 0)
+	{
+		query.addQueryItem("end", QString::number(endTime));
+	}
+	QUrl url("https://api.bybit.com/v5/market/kline");
 	url.setQuery(query);
 
 	QNetworkRequest request(url);
+	request.setTransferTimeout(10000);
+
 	QNetworkReply* reply = m_manager->get(request);
+	QPointer<BybitConnector> self(this);
 
-	QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, symbol]()
+	QObject::connect(reply, &QNetworkReply::finished, this, [self, reply, symbol]()
 		{
-			if (reply->error() == QNetworkReply::NoError)
+			QScopedPointer<QNetworkReply, QScopedPointerDeleteLater> replyGuard(reply);
+
+			if (!self || reply->error() != QNetworkReply::NoError) return;
+
+			QJsonObject root = QJsonDocument::fromJson(reply->readAll()).object();
+			if (root.value("retCode").toInt() != 0) return;
+
+			QJsonArray list = root["result"].toObject()["list"].toArray();
+			std::vector<Candle> chunk;
+			chunk.reserve(list.size());
+			/*JSON строка от Bybit
+					↓
+			QJsonDocument::fromJson()   — парсим текст в дерево объектов
+					↓
+			QJsonObject root            — корень { }
+					↓
+			root["result"].toObject()   — достаём вложенный { }
+					↓
+			["list"].toArray()          — достаём массив свечей [ ]
+					↓
+			list[i].toArray()           — достаём одну свечу [ ]
+					↓
+			c[0].toString().toLongLong() / 1000  — timestamp мс → сек
+			c[1].toString().toDouble()           — open
+			c[2].toString().toDouble()           — high
+			c[3].toString().toDouble()           — low
+			c[4].toString().toDouble()           — close
+			c[5].toString().toDouble()           — volume*/
+			for (int i = list.size() - 1; i >= 0; --i)
 			{
-				QByteArray data = reply->readAll();
-				QJsonDocument doc = QJsonDocument::fromJson(data);
-				QJsonObject root = doc.object();
+				QJsonArray c = list[i].toArray();
+				if (c.size() < 6) continue;
 
-				if (root.value("retCode").toInt() == 0)
-				{
-					QJsonArray list = root.value("result").toObject().value("list").toArray();
-					qDebug() << "[BybitConnector] SUCCESS! Received historical candles:" << list.size() << "for" << symbol;
-
-					if (!list.isEmpty())
-					{
-						QJsonArray latestCandle = list.first().toArray();
-						qDebug() << "[HISTORY]" << symbol << "Last Closed Price:" << latestCandle[4].toString();
-					}
-					std::vector<Candle> candles;
-					for (int i = list.size() - 1; i >= 0; --i)
-					{
-						QJsonArray candleData = list[i].toArray();
-						Candle candle;
-						candle.timestamp = candleData[0].toString().toLongLong() / 1000; 
-						candle.open = candleData[1].toString().toDouble();
-						candle.high = candleData[2].toString().toDouble();
-						candle.low = candleData[3].toString().toDouble();
-						candle.close = candleData[4].toString().toDouble();
-						candle.volume = candleData[5].toString().toDouble();
-
-						candles.push_back(candle);
-					}
-					qDebug() << "[BybitConnector] Successfully parsed" << candles.size() << "candles";
-					emit candlesReceived(symbol, candles);
-				} else
-				{
-					qDebug() << "[BybitConnector] API Error:" << root.value("retMsg").toString();
-				}
-			} else
-			{
-				qDebug() << "[BybitConnector] Network error (REST):" << reply->errorString();
+				Candle candle;
+				candle.timestamp = c[0].toString().toLongLong() / 1000;
+				candle.open = c[1].toString().toDouble();
+				candle.high = c[2].toString().toDouble();
+				candle.low = c[3].toString().toDouble();
+				candle.close = c[4].toString().toDouble();
+				candle.volume = c[5].toString().toDouble();
+				chunk.push_back(candle);
 			}
-			reply->deleteLater();
+
+			emit self->historyChunkLoaded(symbol, chunk);
 		});
+	
 }
 /**
  * @brief Subscribe to real-time market quotes for a given symbol using Bybit WebSocket v5.

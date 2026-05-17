@@ -10,6 +10,7 @@
 #include"../network/common/NetworkTypes.h"
 #include"../models/Candle.h"
 
+class CandleHistoryManager;
 class MarketDataManager : public QObject
 {
 	Q_OBJECT
@@ -31,6 +32,7 @@ private:
 	QHash<QString, ConnectorFactory> m_factories;
 	QHash<QString, IExchangeConnector*> m_activeConnectors;
 
+	QHash<QString, CandleHistoryManager*>m_historyManagers;
 	void setupConnectorSignals(const QString& exchangeName, IExchangeConnector* connector);
 
 };

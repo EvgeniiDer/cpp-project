@@ -15,7 +15,7 @@ public:
 	explicit BybitConnector(QObject* parent = nullptr);
 	void connect()override;
 	void disconnect()override;
-	void fetchHistory(const QString& symbol, ChartInterval interval, int limit /* = 200 */)override;
+	void fetchHistory(const QString& symbol, ChartInterval interval, int limit, qint64 endTime = 0)override;
 	void subscribeQuotes(const QString& symbol)override;
 private slots:
 	void onPingFinished(QNetworkReply* reply);

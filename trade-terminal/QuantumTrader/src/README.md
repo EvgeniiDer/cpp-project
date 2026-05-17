@@ -2,41 +2,65 @@ QuantumTrader: Структура проекта и Дорожная карта 
 📁 Архитектура проекта (Directory Structure)
 Проект строго разделен на бизнес-логику (Core) и пользовательский интерфейс (UI) для соблюдения принципов чистого кода и SOLID.
 
-Plaintext
+# Структура проекта — Торговый терминал
+
+```
 src/
-├── core/                           # "Мозги" (Чистый C++ / Бизнес-логика)
-│   ├── models/                     # Структуры данных (Candle, Instrument, ChartObject)
-│   ├── storage/                    # Кэш котировок, менеджер истории (Binary Storage)
-│   ├── indicators/                 # Математика (TA-Lib, кастомные расчеты, Compute Shaders)
-│   ├── managers/                   # Глобальные управленцы (LinkManager и др.)
-│   └── network/                    # СЕТЕВОЙ МОДУЛЬ (Обмен данными с биржами)
-│       ├── common/                 # Глобальные контракты и типы данных
-│       │   ├── IExchangeConnector.h# Интерфейс (Contract): общие методы fetch/subscribe
-│       │   └── NetworkTypes.h      # Общие структуры (Candle, Interval) и коды ошибок
-│       ├── bybit/                  # Модуль реализации для Bybit
-│       │   ├── BybitConnector.h    # Управление сетевыми запросами и WebSocket
+├── core/                               # "Мозги" (Чистый C++ / Бизнес-логика)
+│   ├── models/                         # Структуры данных (Candle, Instrument, ChartObject)
+│   ├── storage/                        # Кэш котировок и управление историей
+│   │   ├── CandleHistoryManager.h      # Накопление чанков, пагинация, отдача готовой истории
+│   │   ├── CandleHistoryManager.cpp
+│   │   └── BinaryStorage.h             # Бинарный кэш котировок на диске
+│   ├── indicators/                     # Математика (TA-Lib, кастомные расчёты, Compute Shaders)
+│   ├── managers/                       # Глобальные управленцы (LinkManager и др.)
+│   └── network/                        # СЕТЕВОЙ МОДУЛЬ (Обмен данными с биржами)
+│       ├── common/                     # Глобальные контракты и типы данных
+│       │   ├── IExchangeConnector.h    # Интерфейс (Contract): общие методы fetch/subscribe
+│       │   └── NetworkTypes.h          # Общие структуры (Candle, Interval) и коды ошибок
+│       ├── bybit/                      # Модуль реализации для Bybit
+│       │   ├── BybitConnector.h        # Управление сетевыми запросами и WebSocket
 │       │   ├── BybitConnector.cpp
-│       │   ├── BybitParser.h       # Логика разбора JSON Bybit
+│       │   ├── BybitParser.h           # Логика разбора JSON Bybit
 │       │   └── BybitParser.cpp
-│       └── finam/                  # Модуль реализации для Финам (в планах)
-│           ├── FinamConnector.h    # Специфичная логика (Transaq / Trade API)
+│       └── finam/                      # Модуль реализации для Финам (в планах)
+│           ├── FinamConnector.h        # Специфичная логика (Transaq / Trade API)
 │           ├── FinamConnector.cpp
-│           ├── FinamParser.h       # Разбор ответов серверов Финама
+│           ├── FinamParser.h           # Разбор ответов серверов Финама
 │           └── FinamParser.cpp
-├── ui/                             # Весь визуальный слой (Qt / OpenGL)
-│   ├── frame/                      # "Каркас" приложения
-│   │   ├── MainWindow.h/.cpp       # Главное окно (Владелец менеджеров)
-│   │   ├── WindowManager.h/.cpp    # Фабрика док-панелей (ADS)
-│   │   └── ActionManager.h/.cpp    # Реестр действий и горячих клавиш
-│   ├── charts/                     # Всё, что касается графиков
-│   │   ├── FastChart.h/.cpp        # Основной виджет (OpenGL Context)
-│   │   ├── ChartTypes.h            # RenderContext, Viewport, CameraStat
-│   │   └── layers/                 # Слои отрисовки (Grid, Candles, Crosshair)
-│   ├── components/                 # Общие UI элементы (кастомные кнопки, стили)
-│   ├── watchlist/                  # Таблицы котировок (Live Data)
-│   └── portfolio/                  # Позиции, ордера и торговая история
-├── utils/                          # Вспомогательные функции (Logger, TimeFormatter)
-└── resources/                      # Шейдеры (.glsl), иконки, конфиги
+├── ui/                                 # Весь визуальный слой (Qt / OpenGL)
+│   ├── frame/                          # "Каркас" приложения
+│   │   ├── MainWindow.h/.cpp           # Главное окно (Владелец менеджеров)
+│   │   ├── WindowManager.h/.cpp        # Фабрика док-панелей (ADS)
+│   │   └── ActionManager.h/.cpp        # Реестр действий и горячих клавиш
+│   ├── charts/                         # Всё, что касается графиков
+│   │   ├── FastChart.h/.cpp            # Основной виджет (OpenGL Context)
+│   │   ├── ChartTypes.h                # RenderContext, Viewport, CameraStat
+│   │   └── layers/                     # Слои отрисовки (Grid, Candles, Crosshair)
+│   ├── components/                     # Общие UI элементы (кастомные кнопки, стили)
+│   ├── watchlist/                      # Таблицы котировок (Live Data)
+│   └── portfolio/                      # Позиции, ордера и торговая история
+├── utils/                              # Вспомогательные функции (Logger, TimeFormatter)
+└── resources/                          # Шейдеры (.glsl), иконки, конфиги
+```
+
+## Поток данных
+
+```
+BybitConnector          (core/network/bybit/)
+        │
+        │  emit historyChunkLoaded(symbol, chunk)
+        ▼
+CandleHistoryManager    (core/storage/)
+        │
+        │  emit historyReady(symbol, m_accumulated)
+        ▼
+FastChart               (ui/charts/)
+        │
+        ▼
+     OpenGL рендер
+```
+
 🗺️ Дорожная карта разработки (Roadmap)
 Этап 1: Архитектура оконного менеджера и UI
 Умная сетка графиков (Grid Layout & Window Management)

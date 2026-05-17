@@ -1,6 +1,6 @@
 #include "MarketDataManager.h"
 #include<QDebug>
-
+#include"../../core/storage/CandleHistoryManager.h"
 
 MarketDataManager::MarketDataManager(QObject* parent /* = nullptr */)
 	:QObject(parent)
@@ -64,16 +64,26 @@ void MarketDataManager::connectTo(const QString& exchangeName)
 
 	m_activeConnectors.insert(exchangeName, connector);
 	setupConnectorSignals(exchangeName, connector);
+
+	CandleHistoryManager* historyManager = new CandleHistoryManager(connector, this);
+	m_historyManagers.insert(exchangeName, historyManager);
+
+	QObject::connect(historyManager, &CandleHistoryManager::historyReady, this, [this, exchangeName](const QString& symbol, const std::vector<Candle>& candles)
+		{
+			qDebug() << "[DataManager] Deep history assembled! Routing to Chart:" << candles.size() << "candles.";
+			emit candlesUpdated(exchangeName, symbol, candles);
+		});
 	connector->connect();
 }
 void MarketDataManager::requestHistory(const QString& exchangeName, const QString& symbol, ChartInterval interval, int limit)
 {
-	if (m_activeConnectors.contains(exchangeName))
+	if (m_historyManagers.contains(exchangeName))
 	{
-		m_activeConnectors[exchangeName]->fetchHistory(symbol, interval, limit);
-	}else{
-		qDebug() << "[DataManager] Cannot request history: Connector" << exchangeName << "is not active.";
-	
+		qDebug() << "[DataManager] Passing history request to CandleHistoryManager for:" << exchangeName;
+		m_historyManagers[exchangeName]->loadDeepHistory(symbol, interval, limit);
+	} else
+	{
+		qDebug() << "[DataManager] Cannot request history: HistoryManager for" << exchangeName << "is not active.";
 	}
 
 }
