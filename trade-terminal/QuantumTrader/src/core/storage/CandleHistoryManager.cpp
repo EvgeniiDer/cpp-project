@@ -1,7 +1,7 @@
 #include "CandleHistoryManager.h"
 #include <algorithm>
 #include <QDebug>
-
+#include"../events/EventBus.h"
 
 CandleHistoryManager::CandleHistoryManager(IExchangeConnector* connector, QObject* parent /* = nullptr */) : QObject(parent), m_connector(connector)
 {
@@ -40,10 +40,15 @@ void CandleHistoryManager::onChunkLoaded(const QString& symbol, const std::vecto
 		if (!m_accumulated.empty())
 		{
 			emit historyReady(m_currentSymbol, m_accumulated);
+			//EventBus
+			emit EventBus::instance().deepHistoryReady("Bybit", m_currentSymbol, m_accumulated);
 		}
 		return;
 	}
 	m_accumulated.insert(m_accumulated.begin(), chunk.begin(), chunk.end());
 	qDebug() << "[HistoryManager] Buffer size updated:" << m_accumulated.size();
 	emit historyReady(m_currentSymbol, m_accumulated);
+	//EventBus
+
+	emit EventBus::instance().deepHistoryReady("Bybit", m_currentSymbol, m_accumulated);
 }

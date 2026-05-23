@@ -24,8 +24,6 @@ public:
 	void requestHistory(const QString& exchangeName, const QString& symbol, ChartInterval interval, int limit);
 	void subcribeToStream(const QString& exchangeName, const QString& symbol);
 signals:
-	void candlesUpdated(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles);
-	void statusChanged(const QString& exchangeName, const QString& statusMsg);
 	//TODO WHATCHLIST next!!!
 	void tickerUpdated(const QString& exchangeName, const QString& symbol, double lastPrice, double volume);
 private:
@@ -33,6 +31,5 @@ private:
 	QHash<QString, IExchangeConnector*> m_activeConnectors;
 
 	QHash<QString, CandleHistoryManager*>m_historyManagers;
-	void setupConnectorSignals(const QString& exchangeName, IExchangeConnector* connector);
 
 };

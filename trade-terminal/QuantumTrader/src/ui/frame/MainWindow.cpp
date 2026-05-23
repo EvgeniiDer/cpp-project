@@ -13,6 +13,7 @@
 #include <DockManager.h>
 #include <DockWidget.h>
 #include"../src/core/network/bybit/BybitConnector.h"
+#include"../../core/events/EventBus.h"
 MainWindow::MainWindow(QWidget* parent)
 	: QMainWindow(parent)
 {
@@ -109,12 +110,20 @@ void MainWindow::setupManagers()
 }
 void MainWindow::setupConnections()
 {
-	QObject::connect(m_dataManager, &MarketDataManager::statusChanged, this, [](const QString& ex, const QString& status)
+	QObject::connect(&EventBus::instance(), &EventBus::networkStatusChanged, this, [](const QString& exchange, const QString& status)
 		{
-			qDebug() << "[Status]" << ex << "->" << status;
+			qDebug() << "[Status BUS]" << exchange << "->" << status;
+
+			// 💡 Пометка на будущее: когда сделаешь красивый статус-бар внизу окна,
+			// ты прямо отсюда будешь писать: m_statusBar->setText(status);
 		});
-	QObject::connect(m_dataManager, &MarketDataManager::candlesUpdated, this, [](const QString& ex, const QString& sym, const std::vector<Candle>& candles)
+	QObject::connect(&EventBus::instance(), &EventBus::deepHistoryReady, this, [](const QString& exchange, const QString& symbol, const std::vector<Candle>& candles)
+			{
+				qDebug() << "[Data BUS History]" << exchange << symbol << "Count: " << candles.size();
+			});
+
+	QObject::connect(&EventBus::instance(), &EventBus::liveCandleReceived, this, [](const QString& exchange, const QString& symbol, const Candle& candle)
 		{
-			qDebug() << "[Data]" << ex << sym << "Count: " << candles.size();
+			qDebug() << "[Data BUS Live]" << exchange << symbol << "New Tick Price: " << candle.close;
 		});
 }

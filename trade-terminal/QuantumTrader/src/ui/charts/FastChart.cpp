@@ -10,6 +10,7 @@
 #include"../../core/managers/LinkManager.h"
 #include"../src/core/managers/MarketDataManager.h"
 #include"../src/core/network/common/NetworkTypes.h"
+#include"../src/core/events/EventBus.h"
 FastChart::FastChart(QWidget* parent) : QOpenGLWidget(parent)
 {
 	this->setMouseTracking(true);
@@ -123,6 +124,26 @@ QMatrix4x4 FastChart::calculateMvpMatrix()
 	matrix.ortho(left, right, bottom, top, -1.0f, 1.0f);
 	return matrix;
 }
+
+void FastChart::switchSymbol(const QString& exchangeName, const QString& symbol)
+{
+	if (m_symbol == symbol && m_exchangeName == exchangeName)return;
+	qDebug() << "[FastChart LINK] Switching chart to: " << exchangeName << symbol;
+
+	m_exchangeName = exchangeName;
+	m_symbol = symbol;
+	m_isHistoryLoaded = false;
+	m_isLoadingHistory = false;
+
+	if (m_candleLayer)
+	{
+		m_candleLayer->setCandles({});
+	}
+	m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 1500);
+	m_dataManager->subcribeToStream(m_exchangeName, m_symbol);
+	this->update();
+}
+
 chart::DragState FastChart::getZoneAt(const QPointF& pos)
 {
 	float x = pos.x();
@@ -144,7 +165,7 @@ chart::DragState FastChart::getZoneAt(const QPointF& pos)
 		return chart::DragState::DateAxis;
 	return chart::DragState::ChartArea;
 }
-void FastChart::mouseReleaseEvent(QMouseEvent* evetn)
+void FastChart::mouseReleaseEvent(QMouseEvent* event)
 {
 	m_dragState = chart::DragState::None;
 }
@@ -369,42 +390,45 @@ void FastChart::setContext(MarketDataManager* manager, const QString& exchangeNa
 	m_symbol = symbol;
 	m_isHistoryLoaded = false;
 
-	QObject::connect(m_dataManager, &MarketDataManager::candlesUpdated, this, &FastChart::onCandlesReceived);
+	QObject::connect(&EventBus::instance(), &EventBus::deepHistoryReady, this, &FastChart::onDeepHistoryReceived);
+	QObject::connect(&EventBus::instance(), &EventBus::liveCandleReceived, this, &FastChart::onLiveCandleReceived);
+	QObject::connect(&EventBus::instance(), &EventBus::symbolChanged, this, &FastChart::onSymbolChanged);
 	m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 1500);//RestApi request
 	m_dataManager->subcribeToStream(m_exchangeName, m_symbol);//WebSocket request
 }
 
-void FastChart::onCandlesReceived(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles)
+void FastChart::onDeepHistoryReceived(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles)
 {
-	if (symbol != m_symbol || exchangeName != m_exchangeName)
-	{
-		return;
-	}
-	if (candles.size() == 1)
-	{
-		// 🚀 ОБРАБОТКА ОНЛАЙН ТИКОВ (WebSocket)
-		size_t oldSize = m_candleLayer->getCandles().size();
-		m_candleLayer->updateLiveCnadle(candles[0]);
-		size_t newSize = m_candleLayer->getCandles().size();
+	if (symbol != m_symbol || exchangeName != m_exchangeName) return;
 
-		// Если родилась НОВАЯ свеча (минута закрылась), сдвигаем камеру вперед вслед за рынком
-		if (newSize > oldSize)
-		{
-			m_cam.x += static_cast<float>(newSize - oldSize);
-		}
-	}
-	else
-	{
-		qDebug() << "[FastChart] Painting: " << symbol;
-		size_t oldSize = m_candleLayer->getCandles().size();
-		this->loadData(candles);
-		size_t newSize = candles.size();
-		if (oldSize > 0 && newSize > oldSize)
-		{
-			m_cam.x += static_cast<float>(newSize - oldSize);
-		}
-		m_isLoadingHistory = false;
+	qDebug() << "[FastChart BUS] Catch deep history for: " << symbol << "Size: " << candles.size();
+	size_t oldSize = m_candleLayer->getCandles().size();
 
+	this->loadData(candles);
+	size_t newSize = candles.size();
+	if (oldSize > 0 && newSize > oldSize)
+	{
+		m_cam.x += static_cast<float>(newSize - oldSize);
+	}
+	m_isLoadingHistory = false;
+}
+
+void FastChart::onLiveCandleReceived(const QString& exchangeName, const QString& symbol, const Candle& liveCandle)
+{
+	if (symbol != m_symbol || exchangeName != m_exchangeName) return;
+	size_t oldSize = m_candleLayer->getCandles().size();
+	m_candleLayer->updateLiveCnadle(liveCandle);
+
+	size_t newSize = m_candleLayer->getCandles().size();
+	if (newSize > oldSize)
+	{
+		m_cam.x += static_cast<float>(newSize - oldSize);
 	}
 	this->update();
 }
+
+void FastChart::onSymbolChanged(const QString& exchangeName, const QString& symbol)
+{
+	this->switchSymbol(exchangeName, symbol);
+}
+

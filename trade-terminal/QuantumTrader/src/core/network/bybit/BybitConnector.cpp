@@ -7,7 +7,7 @@
 
 #include<QUrlQuery>
 #include<QPointer>
-//#include"../../events/EventBus.h"
+#include"../../events/EventBus.h"
 BybitConnector::BybitConnector(QObject* parent) : IExchangeConnector(parent)
 {
 	m_manager = new QNetworkAccessManager(this);
@@ -60,8 +60,8 @@ BybitConnector::BybitConnector(QObject* parent) : IExchangeConnector(parent)
 void BybitConnector::connect()
 {
 	qDebug() << "[BybitConnector] Initiating a connection to Bybit Api V5... ";
-	emit stateChanged(ConnectionState::Connecting);
-
+	//EventBus 
+	emit EventBus::instance().networkStatusChanged("Bybit", "Connecting...");
 
 	QNetworkRequest request(QUrl("https://api.bybit.com/v5/market/time"));
 	QNetworkReply* reply = m_manager->get(request);// обьект будет наполняться по мере их поступления
@@ -80,16 +80,19 @@ void BybitConnector::onPingFinished(QNetworkReply* reply)
 		if (retCode == 0)
 		{
 			qDebug() << "[ByBitConnector] SUCCESS! Connection with Bybit established.";
-			emit stateChanged(ConnectionState::Connected);
+			//EventBus
+			emit EventBus::instance().networkStatusChanged("Bybit", "Connected");
 		} else
 		{
 			qDebug() << "[ByBitConnector] API REJECTED! Reason:" << errorMsg;
-			emit stateChanged(ConnectionState::Error);
+			//EventBus
+			emit EventBus::instance().networkStatusChanged("Bybit", "Error: " + errorMsg);
 		}
 	} else
 	{
 		qDebug() << "[ByBitConnector] NETWORK ERROR:" << reply->errorString();
-		emit stateChanged(ConnectionState::Error);
+		//EventBus
+		emit EventBus::instance().networkStatusChanged("Bybit", "Network Error");
 	}
 	reply->deleteLater();
 }
@@ -99,7 +102,8 @@ void BybitConnector::disconnect()
 	m_pingTimer->stop();
 	m_webSocket->close();
 
-	emit stateChanged(ConnectionState::Disconnected);
+	//EventBus
+	emit EventBus::instance().networkStatusChanged("Bybit", "Disconnected");
 }
 QString BybitConnector::intervalToByBitString(const ChartInterval& interval)const
 {
@@ -202,7 +206,8 @@ void BybitConnector::onWsTextMessageReceived(const QString& message)
 	if (liveCandle.has_value())
 	{
 		std::vector<Candle> liveUpdate = { liveCandle.value() };
-		emit candlesReceived(symbol, liveUpdate);
+		//EventBus
+		emit EventBus::instance().liveCandleReceived("Bybit", symbol, liveCandle.value());
 		qDebug() << "[LIVE]" << symbol << "Price:" << liveCandle->close;
 	}
 }
@@ -215,5 +220,6 @@ void BybitConnector::onWsDisconected()
 {
 	qDebug() << "[Bybit WS] Disconnected. Error: " << m_webSocket->errorString();
 	m_pingTimer->stop();
-	emit stateChanged(ConnectionState::Disconnected);
+	//EventBus
+	emit EventBus::instance().networkStatusChanged("Bybit", "Disconnected");
 }

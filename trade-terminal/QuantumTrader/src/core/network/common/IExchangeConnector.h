@@ -19,8 +19,6 @@ public:
 
 	virtual void subscribeQuotes(const QString& symbol) = 0;
 signals:
-	void stateChanged(ConnectionState newState);
-	void candlesReceived(const QString& symbol, const std::vector<Candle>& candles);
 	void historyChunkLoaded(const QString& symbol, const std::vector<Candle>& candles);
 	void errorOccured(const QString& message);
 };

@@ -30,7 +30,9 @@ public:
 	void loadData(const std::vector<Candle>& dat);
 	void setContext(MarketDataManager* manager, const QString& exchangeName, const QString& symbol);
 public slots:
-	void onCandlesReceived(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles);
+	void onDeepHistoryReceived(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles);
+	void onLiveCandleReceived(const QString& exchangeName, const QString& symbol, const Candle& liveCandle);
+	void onSymbolChanged(const QString& exchangeName, const QString& symbol);
 protected:
 	void initializeGL() override;
 	void paintGL() override;
@@ -77,6 +79,8 @@ private:
 	QString m_symbol;
 	bool m_isHistoryLoaded = false;
 	bool m_isLoadingHistory = false;
+	//switch symbol
+	void switchSymbol(const QString& exchangeName, const QString& symbol);
 };
 
 
