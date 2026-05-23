@@ -5,6 +5,7 @@
 #include <memory>
 #include <atomic>
 #include "ChartTypes.h" 
+#include"../../core/network/common/NetworkTypes.h"
 
 class CandleLayer;
 class GridLayer;
@@ -29,6 +30,7 @@ public:
 	}
 	void loadData(const std::vector<Candle>& dat);
 	void setContext(MarketDataManager* manager, const QString& exchangeName, const QString& symbol);
+	void switchInterval(const ChartInterval& newInterval);
 public slots:
 	void onDeepHistoryReceived(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles);
 	void onLiveCandleReceived(const QString& exchangeName, const QString& symbol, const Candle& liveCandle);
@@ -81,6 +83,8 @@ private:
 	bool m_isLoadingHistory = false;
 	//switch symbol
 	void switchSymbol(const QString& exchangeName, const QString& symbol);
+	//ChangeInterval
+	ChartInterval m_currentInterval;
 };
 
 

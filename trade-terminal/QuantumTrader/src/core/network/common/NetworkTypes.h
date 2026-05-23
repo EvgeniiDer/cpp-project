@@ -2,7 +2,7 @@
 #include<QString>
 #include<cstdint>
 #include"../src/core/models/Candle.h"
-
+#include<QMetaType>
 struct ChartInterval
 {
 	enum class Unit
@@ -92,6 +92,7 @@ enum class ConnectionState
 	Error
 };
 
+	Q_DECLARE_METATYPE(ChartInterval);//Регистрация глобального типа в базе данных типов QT!!!!
 
 
 

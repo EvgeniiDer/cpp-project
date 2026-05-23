@@ -14,6 +14,7 @@
 #include <DockWidget.h>
 #include"../src/core/network/bybit/BybitConnector.h"
 #include"../../core/events/EventBus.h"
+#include"../charts/ChartContainer.h"
 MainWindow::MainWindow(QWidget* parent)
 	: QMainWindow(parent)
 {
@@ -93,9 +94,7 @@ void MainWindow::setupManagers()
 {
 	m_windowManager->registryFactory("Chart", [this](QWidget* parent) -> QWidget*
 		{
-			FastChart* chart = new FastChart(parent);
-			chart->setContext(this->m_dataManager, "Bybit", "BTCUSDT");
-			return chart;
+			return new ChartContainer(this->m_dataManager, "Bybit", "BTCUSDT", parent);
 		});
 	m_windowManager->registryFactory("Properties", [](QWidget* parent) -> QWidget*
 		{

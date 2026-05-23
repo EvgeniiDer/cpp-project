@@ -6,7 +6,6 @@
 #include"layers/GridLayer.h"
 #include"layers/AxisLayer.h"
 #include"layers/CrosshairLayer.h"
-#include"ChartTypes.h"
 #include"../../core/managers/LinkManager.h"
 #include"../src/core/managers/MarketDataManager.h"
 #include"../src/core/network/common/NetworkTypes.h"
@@ -139,7 +138,7 @@ void FastChart::switchSymbol(const QString& exchangeName, const QString& symbol)
 	{
 		m_candleLayer->setCandles({});
 	}
-	m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 1500);
+	m_dataManager->requestHistory(m_exchangeName, m_symbol, m_currentInterval, 1500);
 	m_dataManager->subcribeToStream(m_exchangeName, m_symbol);
 	this->update();
 }
@@ -211,7 +210,7 @@ void FastChart::mouseMoveEvent(QMouseEvent* event)
 		float zoomFactor = 1.0f + (delta.y() * 0.01f);
 		m_cam.zoomY *= zoomFactor;
 		
-		if (m_cam.zoomY < 1.0f) m_cam.zoomY = 1.0f;
+		if (m_cam.zoomY < 0.00001f) m_cam.zoomY = 0.00001f;
 	}
 	else if (m_dragState == chart::DragState::DateAxis)
 	{
@@ -228,7 +227,7 @@ void FastChart::mouseMoveEvent(QMouseEvent* event)
 			{
 				float zoomFactor = 1.0f + (delta.y() * 0.01f);
 				m_cam.zoomY *= zoomFactor;
-				if (m_cam.zoomY < 1.0f) m_cam.zoomY = 1.0f;
+				if (m_cam.zoomY < 0.00001f) m_cam.zoomY = 0.00001f;
 			}
 		else
 			{
@@ -243,7 +242,7 @@ void FastChart::mouseMoveEvent(QMouseEvent* event)
 				{
 					qDebug() << "[FastChart] Left edge reached! Requesting older candles....";
 					m_isLoadingHistory = true;
-					m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 1000);
+					m_dataManager->requestHistory(m_exchangeName, m_symbol, m_currentInterval, 1000);
 				}
 			}
 	}
@@ -263,7 +262,7 @@ void FastChart::wheelEvent(QWheelEvent* event)
 	if (hoverZone == chart::DragState::PriceAxis)
 	{
 		m_cam.zoomY *= zoomFactor;
-		if (m_cam.zoomY < 1.0f) m_cam.zoomY = 1.0f;
+		if (m_cam.zoomY < 0.00001f) m_cam.zoomY = 0.00001f;
 	}
 	else if (hoverZone == chart::DragState::DateAxis)
 	{
@@ -283,7 +282,7 @@ void FastChart::wheelEvent(QWheelEvent* event)
 			{
 				m_cam.zoomY *= zoomOutFactor;
 			}
-			if (m_cam.zoomY < 1.0f) m_cam.zoomY = 1.0f;
+			if (m_cam.zoomY < 0.00001f) m_cam.zoomY = 0.00001f;
 		} 
 		else
 		{
@@ -390,11 +389,30 @@ void FastChart::setContext(MarketDataManager* manager, const QString& exchangeNa
 	m_symbol = symbol;
 	m_isHistoryLoaded = false;
 
+	m_currentInterval = ChartInterval(ChartInterval::Unit::Minute, 1);
+
 	QObject::connect(&EventBus::instance(), &EventBus::deepHistoryReady, this, &FastChart::onDeepHistoryReceived);
 	QObject::connect(&EventBus::instance(), &EventBus::liveCandleReceived, this, &FastChart::onLiveCandleReceived);
 	QObject::connect(&EventBus::instance(), &EventBus::symbolChanged, this, &FastChart::onSymbolChanged);
-	m_dataManager->requestHistory(m_exchangeName, m_symbol, ChartInterval(ChartInterval::Unit::Minute, 1), 1500);//RestApi request
+
+	m_dataManager->requestHistory(m_exchangeName, m_symbol, m_currentInterval, 1500);//RestApi request
 	m_dataManager->subcribeToStream(m_exchangeName, m_symbol);//WebSocket request
+}
+
+void FastChart::switchInterval(const ChartInterval& newInterval)
+{
+	if (m_currentInterval == newInterval) return;
+	qDebug() << "[FastChart] Changing timeframe to: " << newInterval.toCacheKey();
+	m_currentInterval = newInterval;
+	m_isHistoryLoaded = false;
+	m_isLoadingHistory = false;
+
+	if (m_candleLayer)
+	{
+		m_candleLayer->setCandles({});
+	}
+	m_dataManager->requestHistory(m_exchangeName, m_symbol, m_currentInterval, 1500);
+	this->update();
 }
 
 void FastChart::onDeepHistoryReceived(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles)
@@ -417,7 +435,7 @@ void FastChart::onLiveCandleReceived(const QString& exchangeName, const QString&
 {
 	if (symbol != m_symbol || exchangeName != m_exchangeName) return;
 	size_t oldSize = m_candleLayer->getCandles().size();
-	m_candleLayer->updateLiveCnadle(liveCandle);
+	m_candleLayer->updateLiveCandle(liveCandle);
 
 	size_t newSize = m_candleLayer->getCandles().size();
 	if (newSize > oldSize)

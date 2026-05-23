@@ -19,7 +19,7 @@ public:
 	void resizeGL(int w, int h) override {};
 
 	void setCandles(const std::vector<Candle>& candles);
-	void updateLiveCnadle(const Candle& liveCandle);
+	void updateLiveCandle(const Candle& liveCandle);
 private:
 	void initShaders();
 	//void rebuildVBO();
