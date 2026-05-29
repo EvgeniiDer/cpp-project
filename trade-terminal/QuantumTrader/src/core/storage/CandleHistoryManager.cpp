@@ -3,30 +3,39 @@
 #include <QDebug>
 #include"../events/EventBus.h"
 
-CandleHistoryManager::CandleHistoryManager(IExchangeConnector* connector, QObject* parent /* = nullptr */) : QObject(parent), m_connector(connector)
+CandleHistoryManager::CandleHistoryManager(IExchangeConnector* connector,const QString& exchangeName, QObject* parent /* = nullptr */) : QObject(parent), m_connector(connector), m_exchangeName(exchangeName)
 {
 	QObject::connect(m_connector, &IExchangeConnector::historyChunkLoaded, this, &CandleHistoryManager::onChunkLoaded);
 }
-void CandleHistoryManager::loadDeepHistory(const QString& symbol, ChartInterval interval, int targetLimit)
+void CandleHistoryManager::loadDeepHistory(const MarketContext& ctx)
 {
-	if (m_currentSymbol == symbol && !m_accumulated.empty())
+	if (m_currentSymbol == ctx.symbol && m_currentMarketType == ctx.marketType && m_currentInterval == ctx.interval && !m_accumulated.empty())
 	{
 		qDebug() << "[HistoryManager] Lazy load requested.Fetching older data...";
 		qint64 oldestTimeMs = m_accumulated.front().timestamp * 1000;
+		
+		m_targetLimit += ctx.limit;
 
-		m_connector->fetchHistory(symbol, interval, 1000, oldestTimeMs - 1);
+		MarketContext lazyCtx = ctx;
+		lazyCtx.limit = 1000;
+		lazyCtx.endTime = oldestTimeMs - 1;
+		m_connector->fetchHistory(lazyCtx);
 		return;
 	}
-	m_currentSymbol = symbol;
-	m_currentInterval = interval;
-	m_targetLimit = targetLimit;
+	m_currentSymbol = ctx.symbol;
+	m_currentMarketType = ctx.marketType;
+	m_currentInterval = ctx.interval;
+	m_targetLimit = ctx.limit;
 	
 	m_accumulated.clear();
-	m_accumulated.reserve(targetLimit);
+	m_accumulated.reserve(m_targetLimit);
 
-	qDebug() << "[HistoryManager] Start load: " << symbol << "limit" << targetLimit;
-
-	m_connector->fetchHistory(symbol, interval, std::min(1000, targetLimit), 0);
+	qDebug() << "[HistoryManager] Start load: " << ctx.symbol << "limit" << ctx.limit;
+	
+	MarketContext firstCtx = ctx;
+	firstCtx.limit = std::min(1000, ctx.limit);
+	firstCtx.endTime = 0;
+	m_connector->fetchHistory(firstCtx);
 }
 void CandleHistoryManager::onChunkLoaded(const QString& symbol, const std::vector<Candle>& chunk)
 {
@@ -39,16 +48,51 @@ void CandleHistoryManager::onChunkLoaded(const QString& symbol, const std::vecto
 	{
 		if (!m_accumulated.empty())
 		{
+			std::sort(m_accumulated.begin(), m_accumulated.end(), [](const Candle& a, const Candle& b)
+				{
+					return a.timestamp < b.timestamp;
+				});
 			emit historyReady(m_currentSymbol, m_accumulated);
 			//EventBus
-			emit EventBus::instance().deepHistoryReady("Bybit", m_currentSymbol, m_accumulated);
+			emit EventBus::instance().deepHistoryReady(m_exchangeName, m_currentSymbol, m_accumulated);
+		}else
+		{
+			qWarning() << "[HistoryManager] No history found at all for symbol:" << m_currentSymbol;
+	     	emit historyReady(m_currentSymbol, m_accumulated);
+	    	emit EventBus::instance().deepHistoryReady(m_exchangeName, m_currentSymbol, m_accumulated);
 		}
 		return;
 	}
-	m_accumulated.insert(m_accumulated.begin(), chunk.begin(), chunk.end());
-	qDebug() << "[HistoryManager] Buffer size updated:" << m_accumulated.size();
-	emit historyReady(m_currentSymbol, m_accumulated);
-	//EventBus
+	m_accumulated.insert(m_accumulated.end(), chunk.begin(), chunk.end());
+	emit historyChunkAppended(m_currentSymbol, m_accumulated.size(), m_targetLimit);
 
-	emit EventBus::instance().deepHistoryReady("Bybit", m_currentSymbol, m_accumulated);
+	if (static_cast<int>(m_accumulated.size()) >= m_targetLimit)
+	{
+		std::sort(m_accumulated.begin(), m_accumulated.end(), [](const Candle& a, const Candle& b)
+			{
+				return a.timestamp < b.timestamp;
+			});
+		if (static_cast<int>(m_accumulated.size()) > m_targetLimit)
+		{
+			int extraCount = m_accumulated.size() - m_targetLimit;
+			m_accumulated.erase(m_accumulated.begin(), m_accumulated.begin() + extraCount);
+		}
+		emit historyReady(m_currentSymbol, m_accumulated);
+		emit EventBus::instance().deepHistoryReady(m_exchangeName, m_currentSymbol, m_accumulated);
+		qDebug() << "[HistoryManager] Deep load complete for" << m_currentSymbol << ". Total size:" << m_accumulated.size();
+		return;
+	}
+	qint64 oldestCandleTimeMs = chunk.front().timestamp * 1000;
+	int remainingCandles = m_targetLimit - static_cast<int>(m_accumulated.size());
+	MarketContext nextCtx;
+	nextCtx.exchange = m_exchangeName;
+	nextCtx.symbol = m_currentSymbol;
+	nextCtx.marketType = m_currentMarketType;
+	nextCtx.interval = m_currentInterval;
+	nextCtx.limit = std::min(1000, remainingCandles);
+	nextCtx.endTime = oldestCandleTimeMs - 1;
+
+	int nextChunkSize = std::min(1000, remainingCandles);
+	qDebug() << "[HistoryManager] Requesting next chunk of size:" << nextChunkSize << "before timestamp:" << oldestCandleTimeMs;
+	m_connector->fetchHistory(nextCtx);
 }

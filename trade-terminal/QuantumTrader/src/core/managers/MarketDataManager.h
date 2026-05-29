@@ -21,8 +21,9 @@ public:
 
 	void registerFactory(const QString& exchangeName, ConnectorFactory factory);
 	void connectTo(const QString& exchangeName);
-	void requestHistory(const QString& exchangeName, const QString& symbol, ChartInterval interval, int limit);
-	void subcribeToStream(const QString& exchangeName, const QString& symbol);
+
+	void requestHistory(const MarketContext& ctx);
+	void subcribeToStream(const QString& exchangeName, const QString& symbol, const QString& marketType);
 signals:
 	//TODO WHATCHLIST next!!!
 	void tickerUpdated(const QString& exchangeName, const QString& symbol, double lastPrice, double volume);

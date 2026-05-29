@@ -124,13 +124,14 @@ QMatrix4x4 FastChart::calculateMvpMatrix()
 	return matrix;
 }
 
-void FastChart::switchSymbol(const QString& exchangeName, const QString& symbol)
+void FastChart::switchSymbol(const QString& exchangeName, const QString& symbol, const QString& marketType)
 {
-	if (m_symbol == symbol && m_exchangeName == exchangeName)return;
+	if (m_symbol == symbol && m_exchangeName == exchangeName && m_marketType == marketType)return;
 	qDebug() << "[FastChart LINK] Switching chart to: " << exchangeName << symbol;
 
 	m_exchangeName = exchangeName;
 	m_symbol = symbol;
+	m_marketType = marketType;
 	m_isHistoryLoaded = false;
 	m_isLoadingHistory = false;
 
@@ -138,8 +139,15 @@ void FastChart::switchSymbol(const QString& exchangeName, const QString& symbol)
 	{
 		m_candleLayer->setCandles({});
 	}
-	m_dataManager->requestHistory(m_exchangeName, m_symbol, m_currentInterval, 1500);
-	m_dataManager->subcribeToStream(m_exchangeName, m_symbol);
+	MarketContext ctx;
+	ctx.exchange = m_exchangeName;
+	ctx.symbol = m_symbol;
+	ctx.marketType = m_marketType;
+	ctx.interval = m_currentInterval;
+	ctx.limit = 1500;// c запасом при первой загрузки
+
+	m_dataManager->requestHistory(ctx);
+	m_dataManager->subcribeToStream(m_exchangeName, m_symbol, m_marketType);
 	this->update();
 }
 
@@ -242,7 +250,14 @@ void FastChart::mouseMoveEvent(QMouseEvent* event)
 				{
 					qDebug() << "[FastChart] Left edge reached! Requesting older candles....";
 					m_isLoadingHistory = true;
-					m_dataManager->requestHistory(m_exchangeName, m_symbol, m_currentInterval, 1000);
+
+					MarketContext ctx;
+					ctx.exchange = m_exchangeName;
+					ctx.symbol = m_symbol;
+					ctx.marketType = m_marketType;
+					ctx.interval = m_currentInterval;
+					ctx.limit = 1000;
+					m_dataManager->requestHistory(ctx);
 				}
 			}
 	}
@@ -382,11 +397,12 @@ void FastChart::loadData(const std::vector<Candle>& data)
 	update();
 	}
 }
-void FastChart::setContext(MarketDataManager* manager, const QString& exchangeName, const QString& symbol)
+void FastChart::setContext(MarketDataManager* manager, const QString& exchangeName, const QString& symbol, const QString& marketType)
 {
 	m_dataManager = manager;
 	m_exchangeName = exchangeName;
 	m_symbol = symbol;
+	m_marketType = marketType;
 	m_isHistoryLoaded = false;
 
 	m_currentInterval = ChartInterval(ChartInterval::Unit::Minute, 1);
@@ -395,8 +411,15 @@ void FastChart::setContext(MarketDataManager* manager, const QString& exchangeNa
 	QObject::connect(&EventBus::instance(), &EventBus::liveCandleReceived, this, &FastChart::onLiveCandleReceived);
 	QObject::connect(&EventBus::instance(), &EventBus::symbolChanged, this, &FastChart::onSymbolChanged);
 
-	m_dataManager->requestHistory(m_exchangeName, m_symbol, m_currentInterval, 1500);//RestApi request
-	m_dataManager->subcribeToStream(m_exchangeName, m_symbol);//WebSocket request
+	MarketContext ctx;
+	ctx.exchange = m_exchangeName;
+	ctx.symbol = m_symbol;
+	ctx.marketType = m_marketType;
+	ctx.interval = m_currentInterval;
+	ctx.limit = 1500;
+
+	m_dataManager->requestHistory(ctx);//RestApi request
+	m_dataManager->subcribeToStream(m_exchangeName, m_symbol, m_marketType);//WebSocket request
 }
 
 void FastChart::switchInterval(const ChartInterval& newInterval)
@@ -411,7 +434,13 @@ void FastChart::switchInterval(const ChartInterval& newInterval)
 	{
 		m_candleLayer->setCandles({});
 	}
-	m_dataManager->requestHistory(m_exchangeName, m_symbol, m_currentInterval, 1500);
+	MarketContext ctx;
+	ctx.exchange = m_exchangeName;
+	ctx.symbol = m_symbol;
+	ctx.marketType = m_marketType;
+	ctx.interval = m_currentInterval;
+	ctx.limit = 1500;
+	m_dataManager->requestHistory(ctx);
 	this->update();
 }
 
@@ -445,8 +474,8 @@ void FastChart::onLiveCandleReceived(const QString& exchangeName, const QString&
 	this->update();
 }
 
-void FastChart::onSymbolChanged(const QString& exchangeName, const QString& symbol)
+void FastChart::onSymbolChanged(const QString& exchangeName, const QString& symbol, int groupId)
 {
-	this->switchSymbol(exchangeName, symbol);
+	this->switchSymbol(exchangeName, symbol, m_marketType);
 }
 

@@ -1,96 +1,176 @@
 #include"ByBitParser.h"
-#include<QJsonDocument>
-#include<QJsonObject>
-#include<QJsonArray>
-#include<QJsonParseError>
+#include"../../../external/simdjson/simdjson.h"
 #include<QDebug>
-#include<QVariant>
+#include<QDateTime>
+#include<charconv>
+#include<algorithm>
+#include<string_view>
+#include<QJsonDocument>
+#include<QStringList>
+#include<QJsonArray>
+#include<QJsonObject>
 
+namespace
+{
+	double fastParseDouble(std::string_view sv)
+	{
+		double value = 0.0;
+		std::from_chars_result res = std::from_chars(sv.data(), sv.data() + sv.size(), value);
+		const char* ptr = res.ptr;
+		std::errc ec = res.ec;
+		if (ec != std::errc())
+		{
+			return 0.0;
+		}
+		return value;
+	}
 
-
+	int64_t fastParseInt64(std::string_view sv)
+	{
+		int64_t value = 0;
+		std::from_chars_result res = std::from_chars(sv.data(), sv.data() + sv.size(), value);
+		const char* ptr = res.ptr;
+		std::errc ec = res.ec;
+		if (ec != std::errc())
+		{
+			return 0;
+		}
+		return value;
+	}
+}
 int ByBitParser::parserPingResponse(const QByteArray& rawData, QString& outErrorMsg)
 {
-	QJsonParseError parserError;
-	QJsonDocument jsonDoc = QJsonDocument::fromJson(rawData, &parserError);
+	simdjson::dom::parser parser;
+	try
+	{
+		simdjson::dom::element root = parser.parse(reinterpret_cast<const uint8_t*>(rawData.constData()), rawData.size());
 
-	if (jsonDoc.isNull() || parserError.error != QJsonParseError::NoError)
-	{
-		outErrorMsg = "JSON Parse Error: " + parserError.errorString();
-		return -1;
-	}
-	if (jsonDoc.isObject())
-	{
-		QJsonObject root = jsonDoc.object();
-		int retCode = root.value("retCode").toInt();
+		int64_t retCode = root["retCode"].get_int64().value();
 		if (retCode != 0)
 		{
-			outErrorMsg = root.value("retMsg").toString();
+			std::string_view retMsg = root["retMsg"].get_string().value();
+			outErrorMsg = QString::fromUtf8(retMsg.data(), retMsg.size());
 		}
-		return retCode;
+		return static_cast<int>(retCode);
+	} catch (const simdjson::simdjson_error& er)
+	{
+		outErrorMsg = "simdjson Error: " + QString::fromStdString(er.what());
+		return -1;
 	}
-	return -1;
 }
-
 std::vector<Candle> ByBitParser::parseHistory(const QByteArray& rawData)
 {
 	std::vector<Candle> chunk;
-	QJsonDocument doc = QJsonDocument::fromJson(rawData);
-	if (doc.isNull()) return chunk;
-
-	QJsonObject root = doc.object();
-	if (root.value("retCode").toInt() != 0) return chunk;
-
-	QJsonArray list = root["result"].toObject()["list"].toArray();
-	chunk.reserve(list.size());
-
-	for (int i = list.size() - 1; i >= 0; --i)
+	simdjson::ondemand::parser parser;
+	simdjson::padded_string json(rawData.constData(), rawData.size());
+	try
 	{
-		QJsonArray c = list[i].toArray();
-		if (c.size() < 6) continue;
+		simdjson::ondemand::document doc = parser.iterate(json);
+		int64_t retCode = doc["retCode"].get_int64();
+		if (retCode != 0) return chunk;
 
-		Candle candle;
-		candle.timestamp = c[0].toString().toLongLong() / 1000;
-		candle.open = c[1].toString().toDouble();
-		candle.high = c[2].toString().toDouble();
-		candle.low = c[3].toString().toDouble();
-		candle.close = c[4].toString().toDouble();
-		candle.volume = c[5].toString().toDouble();
-		chunk.push_back(candle);
+		simdjson::ondemand::array list = doc["result"]["list"].get_array();
+		chunk.reserve(1000);
+
+		for (simdjson::ondemand::value row : list)
+		{
+			simdjson::ondemand::array candle_array = row.get_array();
+			simdjson::ondemand::array_iterator it = candle_array.begin();
+
+			Candle candle;
+			candle.timestamp = fastParseInt64((*it).get_string().value()) / 1000; ++it;
+			candle.open = fastParseDouble((*it).get_string().value()); ++it;
+			candle.high = fastParseDouble((*it).get_string().value()); ++it;
+			candle.low = fastParseDouble((*it).get_string().value()); ++it;
+			candle.close = fastParseDouble((*it).get_string().value());    ++it;
+			candle.volume = fastParseDouble((*it).get_string().value());
+
+			chunk.push_back(candle);
+		}
 	}
+	catch (const simdjson::simdjson_error& er)
+	{
+		qDebug() << "[simdjson] Critical error parsing history: " << er.what();
+		return chunk;
+	}
+
+	std::reverse(chunk.begin(), chunk.end());
 	return chunk;
 }
-std::optional<Candle> ByBitParser::parseLiveCandle(const QString& jsonMessage, QString& outSymbol)
+std::optional<Candle> ByBitParser::parseLiveCandle(const QByteArray& jsonMessage, QString& outSymbol)
 {
-	QJsonDocument doc = QJsonDocument::fromJson(jsonMessage.toUtf8());
-	QJsonObject root = doc.object();
+	simdjson::dom::parser parser;
+	try
+	{
+		simdjson::dom::element root = parser.parse(reinterpret_cast<const uint8_t*>(jsonMessage.constData()), jsonMessage.size());
 
-	if (root.contains("op"))
-	{
-		qDebug() << "[Bybit WS System] " << jsonMessage;
-		return std::nullopt;
-	}
-	if (root.contains("topic") && root.value("topic").toString().startsWith("kline"))
-	{
-		QJsonArray dataArr = root.value("data").toArray();
-		if (!dataArr.isEmpty())
+		if (root["op"].error() == simdjson::SUCCESS)
 		{
-			QJsonObject candleData = dataArr.first().toObject();
-			outSymbol = root.value("topic").toString().split(".").last();
-
-			Candle liveCandle;
-			liveCandle.timestamp = candleData.value("start").toVariant().toLongLong() / 1000;
-			liveCandle.open = candleData.value("open").toString().toDouble();
-			liveCandle.high = candleData.value("high").toString().toDouble();
-			liveCandle.low = candleData.value("low").toString().toDouble();
-			liveCandle.close = candleData.value("close").toString().toDouble();
-			liveCandle.volume = candleData.value("volume").toString().toDouble();
-
-			return liveCandle;
+			qDebug() << "[Bybit WS System] " << QString::fromUtf8(jsonMessage.constData(), jsonMessage.size());
+			return std::nullopt;
 		}
+
+		if (root["topic"].error() == simdjson::SUCCESS)
+		{
+			std::string_view topic = root["topic"].get_string().value();
+			if (topic.starts_with("kline"))
+			{
+				size_t last_dot = topic.find_last_of('.');
+				if (last_dot != std::string_view::npos)
+				{
+					std::string_view sym_view = topic.substr(last_dot + 1);
+					outSymbol = QString::fromUtf8(sym_view.data(), sym_view.size());
+				}
+				auto data_array = root["data"].get_array().value();
+				if (data_array.size() > 0)
+				{
+					auto candleData = data_array.at(0).get_object().value();
+
+					Candle liveCandle;
+					liveCandle.timestamp = candleData["start"].get_int64().value() / 1000;
+					liveCandle.open = fastParseDouble(candleData["open"].get_string().value());
+					liveCandle.high = fastParseDouble(candleData["high"].get_string().value());
+					liveCandle.low = fastParseDouble(candleData["low"].get_string().value());
+					liveCandle.close = fastParseDouble(candleData["close"].get_string().value());
+					liveCandle.volume = fastParseDouble(candleData["volume"].get_string().value());
+
+					return liveCandle;
+				}
+			}
+		}
+	} catch (const simdjson::simdjson_error& er)
+	{
+		qDebug() << "[simdjson] Live candle parsing error: " << er.what();
 	}
 	return std::nullopt;
 }
+QStringList ByBitParser::parseAvailableSymbols(const QByteArray& rawData)
+{
+	QStringList symbols;
+	simdjson::dom::parser parser;
+	try
+	{
+		simdjson::dom::element root = parser.parse(reinterpret_cast<const uint8_t*>(rawData.constData()), rawData.size());
 
+		int64_t retCode = root["retCode"].get_int64().value();
+		if (retCode != 0) return symbols;
+
+		auto list = root["result"]["list"].get_array().value();
+
+		symbols.reserve(static_cast<int>(list.size()));
+
+		for (simdjson::dom::element item : list)
+		{
+			std::string_view sym_view = item["symbol"].get_string().value();
+			symbols.append(QString::fromUtf8(sym_view.data(), sym_view.size()));
+		}
+		symbols.sort();
+	} catch (const simdjson::simdjson_error& er)
+	{
+		qDebug() << "[simdjson] Error parsing available symbols:" << er.what();
+	}
+	return symbols;
+}
 QString ByBitParser::buildSubscriptionRequest(const QString& symbol, const QString& interval)
 {
 	QString topic = QString("kline.%1.%2").arg(interval).arg(symbol);
@@ -100,10 +180,9 @@ QString ByBitParser::buildSubscriptionRequest(const QString& symbol, const QStri
 	req["op"] = "subscribe";
 	req["args"] = QJsonArray{ topic };
 	return QJsonDocument(req).toJson(QJsonDocument::Compact);
-
 }
 
-QString ByBitParser::buildPinqRequest()
+QString ByBitParser::buildPingRequest()
 {
 	QJsonObject pingReq;
 	pingReq["req-id"] = "ping_" + QString::number(QDateTime::currentMSecsSinceEpoch());

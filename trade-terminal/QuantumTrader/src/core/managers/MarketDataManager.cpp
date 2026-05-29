@@ -35,29 +35,29 @@ void MarketDataManager::connectTo(const QString& exchangeName)
 
 	m_activeConnectors.insert(exchangeName, connector);
 
-	CandleHistoryManager* historyManager = new CandleHistoryManager(connector, this);
+	CandleHistoryManager* historyManager = new CandleHistoryManager(connector, exchangeName, this);
 	m_historyManagers.insert(exchangeName, historyManager);
 	connector->connect();
 }
-void MarketDataManager::requestHistory(const QString& exchangeName, const QString& symbol, ChartInterval interval, int limit)
+void MarketDataManager::requestHistory(const MarketContext& ctx)
 {
-	if (m_historyManagers.contains(exchangeName))
+	if (m_historyManagers.contains(ctx.exchange))
 	{
-		qDebug() << "[DataManager] Passing history request to CandleHistoryManager for:" << exchangeName;
-		m_historyManagers[exchangeName]->loadDeepHistory(symbol, interval, limit);
+		qDebug() << "[DataManager] Passing history request to CandleHistoryManager for:" << ctx.exchange;
+		m_historyManagers[ctx.exchange]->loadDeepHistory(ctx);
 	} else
 	{
-		qDebug() << "[DataManager] Cannot request history: HistoryManager for" << exchangeName << "is not active.";
+		qDebug() << "[DataManager] Cannot request history: HistoryManager for" << ctx.exchange << "is not active.";
 	}
 
 }
 
-void MarketDataManager::subcribeToStream(const QString& exchangeName, const QString& symbol)
+void MarketDataManager::subcribeToStream(const QString& exchangeName, const QString& symbol, const QString& marketType)
 {
 	if (m_activeConnectors.contains(exchangeName))
 	{
 		qDebug() << "[DataManager] Subscribing to WS stream for" << symbol << " on " << exchangeName;
-		m_activeConnectors[exchangeName]->subscribeQuotes(symbol);
+		m_activeConnectors[exchangeName]->subscribeQuotes(symbol, marketType);
 	}
 	else
 	{

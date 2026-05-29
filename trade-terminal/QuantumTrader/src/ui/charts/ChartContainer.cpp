@@ -6,17 +6,18 @@
 #include<QHBoxLayout>
 #include<QDebug>
 
-ChartContainer::ChartContainer(MarketDataManager* dataManager, const QString& exchange, const QString& symbol, QWidget* parent /* = nullptr */)
+ChartContainer::ChartContainer(MarketDataManager* dataManager, const QString& exchange, const QString& symbol,const QString& marketType, QWidget* parent /* = nullptr */)
 	: QWidget(parent)
 	, m_dataManager(dataManager)
 	, m_exchange(exchange)
+	, m_marketType(marketType)
 	, m_linkGroupId(0)
 {
 	setupUi();
 	
 	if (m_chart)
 	{
-		m_chart->setContext(m_dataManager, m_exchange, symbol);
+		m_chart->setContext(m_dataManager, m_exchange, symbol, m_marketType);
 	}
 	if (m_symbolInput)
 	{

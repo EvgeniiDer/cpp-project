@@ -94,7 +94,7 @@ void MainWindow::setupManagers()
 {
 	m_windowManager->registryFactory("Chart", [this](QWidget* parent) -> QWidget*
 		{
-			return new ChartContainer(this->m_dataManager, "Bybit", "BTCUSDT", parent);
+			return new ChartContainer(this->m_dataManager, "Bybit", "BTCUSDT", "PERP", parent);
 		});
 	m_windowManager->registryFactory("Properties", [](QWidget* parent) -> QWidget*
 		{

@@ -15,10 +15,11 @@ public:
 	virtual void connect() = 0;
 	virtual void disconnect() = 0;
 	
-	virtual void fetchHistory(const QString& symbol, ChartInterval interval, int limit, qint64 endTime = 0) = 0;
+	virtual void fetchHistory(const MarketContext& ctx) = 0;
 
-	virtual void subscribeQuotes(const QString& symbol) = 0;
+	virtual void subscribeQuotes(const QString& symbol, const QString& marketType) = 0;
 signals:
 	void historyChunkLoaded(const QString& symbol, const std::vector<Candle>& candles);
 	void errorOccured(const QString& message);
+	void historyLoadFailed(const QString& symbol, const QString& errorStr);
 };

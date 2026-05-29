@@ -40,15 +40,22 @@ file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS
     "src/*.ui"
     "src/*.qrc"
 )
+#---Путь к SIMDJSON---
+#Явный путь к исходнику прсера, так как он лежить в папке external.(не использует свой собственный CMakeLists.txt
+set(SIMDJSON_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/external/simdjson/simdjson.cpp")
 # --- СОЗДАНИЕ ПРИЛОЖЕНИЯ ---
 # Создаем исполняемый файл из всех найденных исходников
-add_executable(QuantumTrader ${PROJECT_SOURCES} "src/ui/charts/FastChart.h")
+add_executable(QuantumTrader 
+    ${PROJECT_SOURCES}
+    ${SIMDJSON_SOURCES}
+    )
 
 # --- НАСТРОЙКА INCLUDE ПУТЕЙ ---
 # Самый важный момент для вашей структуры!
 # Это позволяет писать #include "core/models/Candle.h" вместо "../core/models/Candle.h"
 target_include_directories(QuantumTrader PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
                                                  "${CMAKE_CURRENT_SOURCE_DIR}/external/ads/src"
+                                                 "${CMAKE_CURRENT_SOURCE_DIR}/external/simdjson"
 )
 
 # --- ЛИНКОВКА БИБЛИОТЕК ---

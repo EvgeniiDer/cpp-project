@@ -29,12 +29,12 @@ public:
 		return m_candleLayer;
 	}
 	void loadData(const std::vector<Candle>& dat);
-	void setContext(MarketDataManager* manager, const QString& exchangeName, const QString& symbol);
+	void setContext(MarketDataManager* manager, const QString& exchangeName, const QString& symbol, const QString& marketType);
 	void switchInterval(const ChartInterval& newInterval);
 public slots:
 	void onDeepHistoryReceived(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles);
 	void onLiveCandleReceived(const QString& exchangeName, const QString& symbol, const Candle& liveCandle);
-	void onSymbolChanged(const QString& exchangeName, const QString& symbol);
+	void onSymbolChanged(const QString& exchangeName, const QString& symbol, int groupId);
 protected:
 	void initializeGL() override;
 	void paintGL() override;
@@ -79,10 +79,11 @@ private:
 	MarketDataManager* m_dataManager{ nullptr };
 	QString m_exchangeName;
 	QString m_symbol;
+	QString m_marketType;
 	bool m_isHistoryLoaded = false;
 	bool m_isLoadingHistory = false;
 	//switch symbol
-	void switchSymbol(const QString& exchangeName, const QString& symbol);
+	void switchSymbol(const QString& exchangeName, const QString& symbol, const QString& marketType);
 	//ChangeInterval
 	ChartInterval m_currentInterval;
 };

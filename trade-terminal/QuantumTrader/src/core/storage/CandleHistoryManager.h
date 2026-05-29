@@ -14,17 +14,21 @@ class CandleHistoryManager : public QObject
 {
 	Q_OBJECT
 public:
-	explicit CandleHistoryManager(IExchangeConnector* connector, QObject* parent = nullptr);
-	void loadDeepHistory(const QString& symbol, ChartInterval interval, int targetLimit);
+	explicit CandleHistoryManager(IExchangeConnector* connector, const QString& exchangeName, QObject* parent = nullptr);
+	~CandleHistoryManager()override = default;
+	void loadDeepHistory(const MarketContext& ctx);
 signals:
 	void historyReady(const QString& symbol, const std::vector<Candle>& fullHistory);
-public slots:
+	void historyChunkAppended(const QString& symbol, int currentSize, int targetSize);
+private slots:
 	void onChunkLoaded(const QString& symbol, const std::vector<Candle>& chunk);
 private:
 	IExchangeConnector* m_connector;
 	std::vector<Candle> m_accumulated;
 
+	QString m_exchangeName;
 	QString m_currentSymbol;
+	QString m_currentMarketType;
 	ChartInterval m_currentInterval;
 	int m_targetLimit = 0;
 };

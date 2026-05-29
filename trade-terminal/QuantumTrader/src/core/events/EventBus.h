@@ -3,6 +3,8 @@
 #include<QString>
 #include<vector>
 #include"../models/Candle.h"
+#include<QList>
+#include<QPair>
 class EventBus : public QObject
 {
 	Q_OBJECT
@@ -20,8 +22,9 @@ signals:
 	void deepHistoryReady(const QString& exchange, const QString& symbol, const std::vector<Candle>& candles);	
 	void liveCandleReceived(const QString& exchange, const QString& symbol, const  Candle& candle);
 	void symbolChanged(const QString& exchange, const QString& symbol, int linkGroupId = 0);
+	void availableSymbolsLoaded(const QList<std::pair<QString, QString>>& symbols);
 private:
-	explicit EventBus(QObject* parent = nullptr) : QObject(parent){}
+	explicit EventBus(QObject* parent = nullptr);
 	~EventBus() override = default;
 	
 };

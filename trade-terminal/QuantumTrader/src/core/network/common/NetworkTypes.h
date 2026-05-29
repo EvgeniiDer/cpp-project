@@ -91,8 +91,24 @@ enum class ConnectionState
 	Connected,
 	Error
 };
-
-	Q_DECLARE_METATYPE(ChartInterval);//Регистрация глобального типа в базе данных типов QT!!!!
+struct MarketContext
+{
+	QString exchange;
+	QString symbol;
+	QString marketType;
+	ChartInterval interval;
+	int limit = 1000;
+	qint64 endTime = 0;
+};
+// 🎯 Регистрация типа в мета-системе Qt.
+// #include нужен компилятору C++, чтобы знать размер структуры в нашем коде.
+// Но макрос обязателен для Qt: он учит универсальный контейнер QVariant
+// (который скрыто используется в QComboBox, QAction, setProperty)
+// выделять память, копировать и безопасно удалять наш кастомный тип данных.
+// ТАК он отличаетья тем что он не может создавать сложную структуру типа данных
+// и рабоать между разными потокам в отличии от 	qRegisterMetaType<QList<QPair<QString, QString>>>("QList<QPair<QString,QString>>");
+Q_DECLARE_METATYPE(ChartInterval);
+Q_DECLARE_METATYPE(MarketContext);
 
 
 

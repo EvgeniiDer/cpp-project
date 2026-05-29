@@ -4,15 +4,16 @@
 #include<QTimer>
 #include<QWebSocket>
 #include"ByBitParser.h"
-
+#include<utility>
 #include<QUrlQuery>
 #include<QPointer>
 #include"../../events/EventBus.h"
+#include<algorithm>
 BybitConnector::BybitConnector(QObject* parent) : IExchangeConnector(parent)
 {
 	m_manager = new QNetworkAccessManager(this);
 
-	m_webSocket = new QWebSocket();
+	m_webSocket = new QWebSocket(QString(), QWebSocketProtocol::VersionLatest, this);
 	//Пометкак QObject::connect вызываем через Родителя потому как у нас пееропределен метод connect!!!!!!! 
 	QObject::connect(m_webSocket, &QWebSocket::connected, this, &BybitConnector::onWsConnected);
 	QObject::connect(m_webSocket, &QWebSocket::disconnected, this, &BybitConnector::onWsDisconected);
@@ -123,17 +124,50 @@ QString BybitConnector::intervalToByBitString(const ChartInterval& interval)cons
 			return "1";
 	}
 }
-void BybitConnector::fetchHistory(const QString& symbol, ChartInterval interval, int limit, qint64 endTime)
+
+QString BybitConnector::getRestCategory(const QString& uiMarketType) const
+{
+	static const QHash<QString, QString> map = {
+		{"SPOT",     "spot"},
+		{"INV_PERP", "inverse"},
+		{"OPTION",   "option"}
+	};
+	return map.value(uiMarketType, "linear");
+}
+
+QString BybitConnector::getWsEndpoint(const QString& uiMarketType) const
+{
+	static const QHash<QString, QString> map =
+	{
+		{"SPOT",     "wss://stream.bybit.com/v5/public/spot"},
+		{"INV_PERP", "wss://stream.bybit.com/v5/public/inverse"},
+		{"OPTION",   "wss://stream.bybit.com/v5/public/option"}
+	};
+	return map.value(uiMarketType, "wss://stream.bybit.com/v5/public/linear");
+}
+
+QString BybitConnector::getUiMarketType(const QString& category) const
+{
+	static const QHash<QString, QString> map =
+	{
+		{"spot",    "SPOT"},
+		{"inverse", "INV_PERP"},
+		{"option",  "OPTION"}
+	};
+	return map.value(category, "PERP");
+}
+
+void BybitConnector::fetchHistory(const MarketContext& ctx)
 {
 	QUrlQuery query;
-	query.addQueryItem("category", "linear");
-	query.addQueryItem("symbol", symbol);
-	query.addQueryItem("interval", intervalToByBitString(interval));
-	query.addQueryItem("limit", QString::number(limit));
+	query.addQueryItem("category", getRestCategory(ctx.marketType));
+	query.addQueryItem("symbol", ctx.symbol);
+	query.addQueryItem("interval", intervalToByBitString(ctx.interval));
+	query.addQueryItem("limit", QString::number(ctx.limit));
 
-	if (endTime > 0)
+	if (ctx.endTime > 0)
 	{
-		query.addQueryItem("end", QString::number(endTime));
+		query.addQueryItem("end", QString::number(ctx.endTime));
 	}
 	QUrl url("https://api.bybit.com/v5/market/kline");
 	url.setQuery(query);
@@ -143,14 +177,23 @@ void BybitConnector::fetchHistory(const QString& symbol, ChartInterval interval,
 
 	QNetworkReply* reply = m_manager->get(request);
 	QPointer<BybitConnector> self(this);
+	
+	QString targetSymbol = ctx.symbol;
 
-	QObject::connect(reply, &QNetworkReply::finished, this, [self, reply, symbol]()
+	QObject::connect(reply, &QNetworkReply::finished, this, [self, reply, targetSymbol]()
 		{
 			QScopedPointer<QNetworkReply, QScopedPointerDeleteLater> replyGuard(reply);
 
-			if (!self || reply->error() != QNetworkReply::NoError) return;
+			if (!self) return;
+			if (reply->error() != QNetworkReply::NoError)
+			{
+				QString errStr = reply->errorString();
+				qWarning() << "[BybitConnector] fetchHistory error for: " << targetSymbol << "	Error: " << errStr;
+				emit self->historyLoadFailed(targetSymbol, errStr);
+				return;
+			}
 			std::vector<Candle>chunk = ByBitParser::parseHistory(reply->readAll());
-			emit self->historyChunkLoaded(symbol, chunk);
+			emit self->historyChunkLoaded(targetSymbol, chunk);
 		});
 	
 }
@@ -177,17 +220,88 @@ void BybitConnector::fetchHistory(const QString& symbol, ChartInterval interval,
  * - Implement and send the subscription message (JSON) after the socket is connected.
  * - Add error handling and reconnection/backoff logic for production robustness.
  */
-void BybitConnector::subscribeQuotes(const QString& symbol)
+void BybitConnector::subscribeQuotes(const QString& symbol, const QString& marketType)
 {
 	ChartInterval testInterval(ChartInterval::Unit::Minute, 1);
 
-	m_webSocket->setProperty("currentSymbol", symbol);
-	m_webSocket->setProperty("currentInterval", intervalToByBitString(testInterval));
+	m_currentSymbol = symbol;
+	m_currentInterval = intervalToByBitString(testInterval);
+	m_currentMarketType = marketType;
 
-	QUrl wsUrl("wss://stream.bybit.com/v5/public/linear");
-	qDebug() << "[Bybit WS] connection to" << wsUrl.toString();
-	m_webSocket->open(wsUrl);
+	m_webSocket->setProperty("currentSymbol", m_currentSymbol);
+	m_webSocket->setProperty("currentInterval", m_currentInterval);
+	if (m_webSocket->state() != QAbstractSocket::UnconnectedState)
+	{
+		qDebug() << "[Bybit WS] Closing existing connection before switching...";
+		m_webSocket->close();
+	}
+	QString wsUrl = getWsEndpoint(marketType);
+	qDebug() << "[Bybit WS] Connecting to target market stream: " << wsUrl;
+	m_webSocket->open(QUrl(wsUrl));
 }
+void BybitConnector::fetchAvailableSymbols()
+{
+	qDebug() << "[BybitConnector] Initiating parallel fetch for ALL 4 market categories...";
+	
+	struct SyncContext
+	{
+		QList <std::pair<QString, QString>> accumulateSymbols;
+		int pendingRequests = 4;
+
+	};
+	
+	std::shared_ptr<SyncContext> ctx = std::make_shared<SyncContext>();
+
+	auto launchCategoryRequest = [this, ctx](const QString& category)
+		{
+			QUrl url("https://api.bybit.com/v5/market/instruments-info");
+			QUrlQuery query;
+			query.addQueryItem("category", category);
+			url.setQuery(query);//example https://api.bybit.com/v5/market/instruments-info?category=spot
+
+			QNetworkRequest request(url);
+			request.setTransferTimeout(12000);
+
+			QNetworkReply* reply = m_manager->get(request);
+			/*
+			* QPointer....
+			  Это слабая ссылка на объект, производный от QObject.
+		      Если объект будет удалён, self автоматически станет nullptr.
+			  Позволяет безопасно проверить if (!self) return; – вдруг объект, который инициировал запрос, уже уничтожен.
+			*/
+			QPointer<BybitConnector> self(this);
+			QObject::connect(reply, &QNetworkReply::finished, this, [self, reply, ctx, category]()
+				{
+				 /* QScopePointer<..>
+				    Это аналог std::unique_ptr, но с дополнительными политиками удаления.
+					При выходе replyGuard из области видимости (конец лямбды) он автоматически удаляет хранимый объект.
+					Второй шаблонный аргумент QScopedPointerDeleteLater говорит: вместо delete вызвать deleteLater() (нужно для QObject).
+				 */
+					QScopedPointer<QNetworkReply, QScopedPointerDeleteLater> replyGuard(reply);
+					if (!self) return;
+					if (reply->error() == QNetworkReply::NoError)
+					{
+						QStringList parsedSymbols = ByBitParser::parseAvailableSymbols(reply->readAll());
+						QString marketType = self->getUiMarketType(category);
+						for (const QString& symbol : parsedSymbols)
+						{
+							ctx->accumulateSymbols.append({symbol, marketType});
+						}
+					}
+					ctx->pendingRequests--;
+					if (ctx->pendingRequests == 0)
+					{
+						std::sort(ctx->accumulateSymbols.begin(), ctx->accumulateSymbols.end());
+						emit EventBus::instance().availableSymbolsLoaded(ctx->accumulateSymbols);
+					}
+				});
+		};
+	launchCategoryRequest("spot");
+	launchCategoryRequest("linear");
+	launchCategoryRequest("inverse");
+	launchCategoryRequest("option");
+}
+
 void BybitConnector::onWsConnected()
 {
 	qDebug() << "[Bybit WS] Connected! Launching pinger and subscribing to quotes...";
@@ -202,7 +316,7 @@ void BybitConnector::onWsConnected()
 void BybitConnector::onWsTextMessageReceived(const QString& message)
 {
 	QString symbol;
-	std::optional<Candle> liveCandle = ByBitParser::parseLiveCandle(message, symbol);
+	std::optional<Candle> liveCandle = ByBitParser::parseLiveCandle(message.toUtf8(), symbol);
 	if (liveCandle.has_value())
 	{
 		std::vector<Candle> liveUpdate = { liveCandle.value() };
@@ -213,7 +327,7 @@ void BybitConnector::onWsTextMessageReceived(const QString& message)
 }
 void BybitConnector::sendWsPing()
 {
-	QString message = ByBitParser::buildPinqRequest();
+	QString message = ByBitParser::buildPingRequest();
 	m_webSocket->sendTextMessage(message);
 }
 void BybitConnector::onWsDisconected()
