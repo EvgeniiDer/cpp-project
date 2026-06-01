@@ -10,6 +10,7 @@ struct ChartInterval
 		Tick,
 		Volume,
 		Range,
+		Second,
 		Minute,
 		Hour,
 		Day,
@@ -37,6 +38,8 @@ struct ChartInterval
 			return count * 86400;
 		case Unit::Week:
 			return count * 604800;
+		case Unit::Month:
+			return count * 2592000;
 		default: 
 			return 0;
 		}

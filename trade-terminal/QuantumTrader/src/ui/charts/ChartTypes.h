@@ -30,7 +30,7 @@ namespace chart
 	{
 		float priceAxisWidth = 60.0f;
 		float timeAxisHeight = 30.0f;
-		int initialCandleCount = 1500;// Первоночальная загрузка свечей!!!! Можно в будущем сделать как настройку для юзера
+		int initialCandleCount = 500;// Первоночальная загрузка свечей!!!! Можно в будущем сделать как настройку для юзера
 
 	};
 	struct ChartContext

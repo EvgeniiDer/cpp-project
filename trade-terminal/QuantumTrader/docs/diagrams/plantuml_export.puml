@@ -1,0 +1,175 @@
+@startuml
+' === НАСТРОЙКИ СТРОГОГО ГЕОМЕТРИЧЕСКОГО ВИДА ===
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 60
+
+' === НАСТРОЙКИ ТЁМНОЙ ТЕМЫ ===
+skinparam backgroundColor #1E1E1E
+skinparam DefaultFontColor #FFFFFF
+
+skinparam class {
+    BackgroundColor #2D2D2D
+    BorderColor #4F4F4F
+    FontColor #FFFFFF
+    AttributeFontColor #CCCCCC
+    AttributeIconSize 0
+}
+
+skinparam ArrowColor #777777
+skinparam PackageBackgroundColor #1F2D3D
+skinparam PackageBorderColor #4F4F4F
+
+' === КОРЕНЬ ПРИЛОЖЕНИЯ ===
+class MainWindow {
+    - m_dataManager : MarketDataManager*
+    - m_dockManager : ads::CDockManager*
+    - m_windowManager : WindowManager*
+    - m_actionManager : ActionManager*
+}
+
+' === СРЕДНИЙ СЛОЙ (ВХОДНЫЕ ВОРОТА И ДАННЫЕ) ===
+class ActionManager {
+    - m_windowManager : WindowManager*
+}
+
+class "ads::CDockManager" as CDockManager {
+    + addDockWidget()
+}
+
+class MarketDataManager {
+    - m_factories : QHash
+    - m_activeConnectors : QHash
+    - m_historyManagers : QHash
+    + connectTo(exchangeName : QString) : void
+    + requestHistory(ctx : MarketContext) : void
+    + subcribeToStream() : void
+}
+
+' === НИЖНИЙ СЛОЙ ИНТЕРФЕЙСА ===
+class WindowManager {
+    - m_dockManager : ads::CDockManager*
+    - m_dataManager : MarketDataManager*
+    + createWindow(windowType : QString) : void
+}
+
+' === КОЛОНКА ПРАВАЯ: ИНТЕРФЕЙС ОКНА ГРАФИКА ===
+package "Chart Window Subsystem (Интерфейс Окна)" #1F352D {
+    class ChartContainer {
+        - m_dataManager : MarketDataManager*
+        - m_chart : FastChart*
+        - m_symbolInput : SymbolLineEdit*
+    }
+
+    class "SymbolLineEdit (от QLineEdit)" as SymbolLineEdit {
+        - m_exchange : QString
+        - m_marketType : QString
+        - m_complete : QCompleter*
+        + SymbolLineEdit(exchange, marketType, parent)
+        + setSymbolList(symbols : QList) : void
+        - onAvailableSymbolsLoaded(symbols : QList) : void
+    }
+
+    class QCompleter {
+        + setCaseSensitivity()
+        + setCompletionMode()
+    }
+}
+
+' === ПОД ПРАВОЙ КОЛОНКОЙ: ГРАФИЧЕСКИЙ ДВИЖОК OPENGL ===
+package "OpenGL Rendering Engine (Движок Отрисовки)" #2D1F3D {
+    class QOpenGLWidget
+    class FastChart {
+        - m_dataManager : MarketDataManager*
+        - m_layers : std::vector<std::unique_ptr<IChartLayer>>
+        + loadData(data : std::vector<Candle>) : void
+    }
+    interface IChartLayer
+    class GridLayer
+    class CandleLayer
+    class AxisLayer
+    class CrosshairLayer
+}
+
+' === ПОД ЦЕНТРАЛЬНОЙ КОЛОНКОЙ: ВЕТКА СЕТИ И ИНФРАСТРУКТУРЫ ===
+package "Network & Infrastructure" #1F2D3D {
+    class CandleHistoryManager {
+        - m_connector : IExchangeConnector*
+        + loadDeepHistory(ctx : MarketContext) : void
+    }
+    interface IExchangeConnector {
+        + connect()*
+    }
+    class BybitConnector
+    class ByBitParser <<Utility>>
+}
+
+' === ГЛОБАЛЬНЫЕ СЕРВИСЫ ===
+class EventBus <<Singleton>> {
+    + {static} instance() : EventBus&
+}
+
+' === ГЕОМЕТРИЧЕСКОЕ ПОЗИЦИОНИРОВАНИЕ (СТРОГАЯ ТРЕХКОЛОНОЧНАЯ СЕТКА) ===
+' Горизонт верхнего слоя (Задаем 3 колонки: Лево, Центр, Право)
+ActionManager -[hidden]right-> CDockManager
+CDockManager -[hidden]right-> MarketDataManager
+MarketDataManager -[hidden]right-> ChartContainer
+
+' Вертикаль Левой Колонки (Управление UI)
+ActionManager -[hidden]down-> WindowManager
+
+' Вертикаль Центральной Колонки (Данные -> Сеть уходит строго вниз)
+MarketDataManager -[hidden]down-> CandleHistoryManager
+
+' Вертикаль Правой Колонки (Интерфейс Графика -> Движок OpenGL идет строго вниз)
+ChartContainer -[hidden]down-> QOpenGLWidget
+
+' Внутреннее выравнивание элементов внутри пакетов
+SymbolLineEdit -[hidden]right-> QCompleter
+QOpenGLWidget -[hidden]right-> FastChart
+FastChart -[hidden]down-> IChartLayer
+GridLayer -[hidden]right-> CandleLayer
+CandleLayer -[hidden]right-> AxisLayer
+AxisLayer -[hidden]right-> CrosshairLayer
+
+CandleHistoryManager -[hidden]right-> IExchangeConnector
+IExchangeConnector -[hidden]right-> ByBitParser
+IExchangeConnector -[hidden]down-> BybitConnector
+
+' === СВЯЗИ ВЛАДЕНИЯ ВЕРХНЕГО УРОВНЯ ===
+MainWindow *--> ActionManager
+MainWindow *--> CDockManager
+MainWindow *--> MarketDataManager
+MainWindow *--> WindowManager
+
+' === СВЯЗИ ИСПОЛЬЗОВАНИЯ UI ===
+ActionManager o--> WindowManager
+WindowManager o--> CDockManager
+WindowManager o--> MarketDataManager
+ChartContainer o--> MarketDataManager
+ChartContainer ..> EventBus
+
+' === СВЯЗИ ВНУТРИ ИНТЕРФЕЙСА ОКНА ===
+ChartContainer *--> SymbolLineEdit
+SymbolLineEdit *--> QCompleter
+SymbolLineEdit ..> EventBus
+
+' === СВЯЗИ ДВИЖКА ОТРИСОВКИ ===
+ChartContainer *--> FastChart
+QOpenGLWidget <|-- FastChart
+FastChart *--> IChartLayer
+IChartLayer <|-- GridLayer
+IChartLayer <|-- CandleLayer
+IChartLayer <|-- AxisLayer
+IChartLayer <|-- CrosshairLayer
+FastChart o--> MarketDataManager
+FastChart ..> EventBus
+
+' === СВЯЗИ ВНУТРИ ВЕТКИ ДАННЫХ И СЕТИ ===
+MarketDataManager *--> CandleHistoryManager
+MarketDataManager *--> IExchangeConnector
+IExchangeConnector <|-- BybitConnector
+CandleHistoryManager o--> IExchangeConnector
+BybitConnector ..> ByBitParser
+
+@endum

@@ -2,7 +2,7 @@
 #include"QssEditor.h"
 #include"CssHighlighter.h"
 
-#include"../../utils/ThemeManager.h"
+#include"../../../utils/ThemeManager.h"
 
 #include<QVBoxLayout>
 #include<QPushButton>

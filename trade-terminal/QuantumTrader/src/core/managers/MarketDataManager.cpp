@@ -1,11 +1,18 @@
 #include "MarketDataManager.h"
 #include<QDebug>
 #include"../../core/storage/CandleHistoryManager.h"
-
+#include"../events/EventBus.h"
 MarketDataManager::MarketDataManager(QObject* parent /* = nullptr */)
 	:QObject(parent)
 {
-
+	QObject::connect(&EventBus::instance(), &EventBus::availableSymbolsLoaded, this, [this](const QList<std::pair<QString, QString>>& symbols)
+		{
+			if (!symbols.isEmpty())
+			{
+				m_cachedSymbols["Bybit"] = symbols;
+				qDebug() << "[DataManager] Successfully intercepted and cached" << symbols.size() << "symbols for Bybit";
+			}
+		});
 }
 MarketDataManager::~MarketDataManager()
 {
@@ -63,4 +70,9 @@ void MarketDataManager::subcribeToStream(const QString& exchangeName, const QStr
 	{
 		qDebug() << "[DataManager] Cannot subscribe: Connector" << exchangeName << "is not active.";
 	}
+}
+
+QList<std::pair<QString, QString>> MarketDataManager::getCachedSymbols(const QString& exchangeName) const
+{
+	return m_cachedSymbols.value(exchangeName);
 }

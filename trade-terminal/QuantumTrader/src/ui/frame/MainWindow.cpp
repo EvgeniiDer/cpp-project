@@ -4,7 +4,7 @@
 #include"../frame/WindowManager.h"
 #include"../frame/ActionManager.h"
 #include"../../utils/ThemeManager.h"
-#include"../components/ThemeEditorWidget.h"
+#include"../components/theme_editor/ThemeEditorWidget.h"
 #include<QApplication>
 #include<QMenuBar>
 #include<QMenu>

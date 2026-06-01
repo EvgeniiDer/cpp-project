@@ -83,6 +83,7 @@ void BybitConnector::onPingFinished(QNetworkReply* reply)
 			qDebug() << "[ByBitConnector] SUCCESS! Connection with Bybit established.";
 			//EventBus
 			emit EventBus::instance().networkStatusChanged("Bybit", "Connected");
+			fetchAvailableSymbols();
 		} else
 		{
 			qDebug() << "[ByBitConnector] API REJECTED! Reason:" << errorMsg;

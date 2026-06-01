@@ -5,7 +5,9 @@
 #include<QVBoxLayout>
 #include<QHBoxLayout>
 #include<QDebug>
-
+#include"../components/SymbolLineEdit.h"
+#include"../../core/managers/MarketDataManager.h"
+#include"../components/TimeFrameWidget.h"
 ChartContainer::ChartContainer(MarketDataManager* dataManager, const QString& exchange, const QString& symbol,const QString& marketType, QWidget* parent /* = nullptr */)
 	: QWidget(parent)
 	, m_dataManager(dataManager)
@@ -23,6 +25,19 @@ ChartContainer::ChartContainer(MarketDataManager* dataManager, const QString& ex
 	{
 		m_symbolInput->setText(symbol);
 	}
+	if (m_timeFrameWidget && m_chart)
+	{
+		QObject::connect(m_timeFrameWidget, &TimeFrameWidget::intervalChanged, m_chart, &FastChart::switchInterval);
+	}
+	QObject::connect(&EventBus::instance(), &EventBus::symbolChanged, this, [this](const QString& exchange, const QString& symbol, int groupId)
+		{
+			if (m_linkGroupId > 0 && groupId == m_linkGroupId && exchange == m_exchange)
+			{
+				qDebug() << "[ChartContainer] Group match found for group: " << m_linkGroupId << "Syncing to:" << symbol;
+				m_chart->switchSymbol(m_exchange, symbol, m_marketType);
+				m_symbolInput->setText(symbol);
+			}
+		});
 }
 void ChartContainer::setupUi()
 {
@@ -33,25 +48,36 @@ void ChartContainer::setupUi()
 	QHBoxLayout* topPanelLayout = new QHBoxLayout();
 	topPanelLayout->setContentsMargins(4, 4, 4, 2);
 
-	m_symbolInput = new QLineEdit(this);
-	m_symbolInput->setPlaceholderText("Enter symbol...");
-	m_symbolInput->setFixedWidth(120);
-
-	m_symbolInput->setStyleSheet("QLineEdit { font-weight: bold; text-transform: uppercase; }"); 
-
+	m_symbolInput = new SymbolLineEdit(m_exchange, m_marketType, this);
+	
+	if (m_dataManager)
+	{
+		QList<std::pair<QString,QString>> cached = m_dataManager->getCachedSymbols(m_exchange);
+		if (!cached.isEmpty())
+		{
+			m_symbolInput->setSymbolList(cached);
+		}
+	}
 	QObject::connect(m_symbolInput, &QLineEdit::returnPressed, this, &ChartContainer::onSymbolInputEntered);
 
 	topPanelLayout->addWidget(m_symbolInput);
+	m_timeFrameWidget = new TimeFrameWidget(this);
+	topPanelLayout->addWidget(m_timeFrameWidget);
 	topPanelLayout->addStretch();
 	m_chart = new FastChart(this);
 
 	mainLayout->addLayout(topPanelLayout);
 	mainLayout->addWidget(m_chart, 1);
 }
-void ChartContainer::onSymbolInputEntered()
+void ChartContainer::onSymbolInputEntered()const
 {
 	QString newSymbol = m_symbolInput->text().toUpper().trimmed();
 	if (newSymbol.isEmpty()) return;
-	qDebug() << "[ChartContainer] Input submitted. Broadcasting new symbol: " << newSymbol << " to group: " << m_linkGroupId;
-	emit EventBus::instance().symbolChanged(m_exchange, newSymbol, m_linkGroupId);
+	qDebug() << "[ChartContainer] Local switch to: " << newSymbol;
+	m_chart->switchSymbol(m_exchange, newSymbol, m_marketType);
+	if (m_linkGroupId > 0)
+	{
+		qDebug() << "[ChartContainer] Broadcasting symbol to group:" << m_linkGroupId;
+		emit EventBus::instance().symbolChanged(m_exchange, newSymbol, m_linkGroupId);
+	}
 }

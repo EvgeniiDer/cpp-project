@@ -24,6 +24,7 @@ public:
 
 	void requestHistory(const MarketContext& ctx);
 	void subcribeToStream(const QString& exchangeName, const QString& symbol, const QString& marketType);
+	QList<std::pair<QString, QString>>getCachedSymbols(const QString& exchangeName)const;
 signals:
 	//TODO WHATCHLIST next!!!
 	void tickerUpdated(const QString& exchangeName, const QString& symbol, double lastPrice, double volume);
@@ -32,5 +33,7 @@ private:
 	QHash<QString, IExchangeConnector*> m_activeConnectors;
 
 	QHash<QString, CandleHistoryManager*>m_historyManagers;
+
+	QHash<QString, QList<std::pair<QString,QString>>> m_cachedSymbols;
 
 };

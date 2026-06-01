@@ -144,7 +144,7 @@ void FastChart::switchSymbol(const QString& exchangeName, const QString& symbol,
 	ctx.symbol = m_symbol;
 	ctx.marketType = m_marketType;
 	ctx.interval = m_currentInterval;
-	ctx.limit = 1500;// c запасом при первой загрузки
+	ctx.limit = m_settings.initialCandleCount;// c запасом при первой загрузки
 
 	m_dataManager->requestHistory(ctx);
 	m_dataManager->subcribeToStream(m_exchangeName, m_symbol, m_marketType);
@@ -416,7 +416,7 @@ void FastChart::setContext(MarketDataManager* manager, const QString& exchangeNa
 	ctx.symbol = m_symbol;
 	ctx.marketType = m_marketType;
 	ctx.interval = m_currentInterval;
-	ctx.limit = 1500;
+	ctx.limit = m_settings.initialCandleCount;
 
 	m_dataManager->requestHistory(ctx);//RestApi request
 	m_dataManager->subcribeToStream(m_exchangeName, m_symbol, m_marketType);//WebSocket request
@@ -439,7 +439,7 @@ void FastChart::switchInterval(const ChartInterval& newInterval)
 	ctx.symbol = m_symbol;
 	ctx.marketType = m_marketType;
 	ctx.interval = m_currentInterval;
-	ctx.limit = 1500;
+	ctx.limit = m_settings.initialCandleCount;
 	m_dataManager->requestHistory(ctx);
 	this->update();
 }
