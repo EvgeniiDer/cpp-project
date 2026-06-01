@@ -59,16 +59,16 @@ void MarketDataManager::requestHistory(const MarketContext& ctx)
 
 }
 
-void MarketDataManager::subcribeToStream(const QString& exchangeName, const QString& symbol, const QString& marketType)
+void MarketDataManager::subcribeToStream(const MarketContext& ctx)
 {
-	if (m_activeConnectors.contains(exchangeName))
+	if (m_activeConnectors.contains(ctx.exchange))
 	{
-		qDebug() << "[DataManager] Subscribing to WS stream for" << symbol << " on " << exchangeName;
-		m_activeConnectors[exchangeName]->subscribeQuotes(symbol, marketType);
+		qDebug() << "[DataManager] Subscribing to WS stream for" << ctx.symbol << " on " << ctx.exchange;
+		m_activeConnectors[ctx.exchange]->subscribeQuotes(ctx);
 	}
 	else
 	{
-		qDebug() << "[DataManager] Cannot subscribe: Connector" << exchangeName << "is not active.";
+		qDebug() << "[DataManager] Cannot subscribe: Connector" << ctx.exchange << "is not active.";
 	}
 }
 

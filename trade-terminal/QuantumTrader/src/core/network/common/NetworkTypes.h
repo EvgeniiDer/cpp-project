@@ -58,6 +58,9 @@ struct ChartInterval
 		case Unit::Range:
 			unitStr = "Range";
 			break;
+		case Unit::Second:
+			unitStr = "Second";
+			break;
 		case Unit::Minute:
 			unitStr = "Minute";
 			break;
@@ -96,6 +99,7 @@ enum class ConnectionState
 };
 struct MarketContext
 {
+	int chartId = 0;
 	QString exchange;
 	QString symbol;
 	QString marketType;

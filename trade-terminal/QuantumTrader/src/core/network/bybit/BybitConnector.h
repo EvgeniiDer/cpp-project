@@ -5,6 +5,7 @@
 #include<QString>
 #include<QPointer>
 #include<vector>
+#include<QHash>
 
 class QNetworkAccessManager;
 class QNetworkReply;
@@ -55,7 +56,7 @@ public:
 	 * @see ByBitParser::parseHistory       – парсинг сырого JSON в вектор Candle.
 	 */
 	void fetchHistory(const MarketContext& ctx)override;
-	void subscribeQuotes(const QString& symbol, const QString& marketType)override;
+	void subscribeQuotes(const MarketContext& ctx)override;
 	/**
 	 * Асинхронно загружает список всех торговых инструментов (символов)
 	 * со всех 4 категорий Bybit: spot, linear, inverse, option.
@@ -90,6 +91,9 @@ private slots:
 	void onWsTextMessageReceived(const QString& message);
 	void sendWsPing();
 private:
+	bool m_pendingReconnect = false;
+	QString m_pendingWsUrl;
+	ChartInterval m_wsInterval;
 	QWebSocket* m_webSocket = nullptr;
 	QNetworkAccessManager* m_manager = nullptr;
 	QTimer* m_pingTimer = nullptr;
@@ -102,4 +106,6 @@ private:
 	QString m_currentSymbol;
 	QString m_currentInterval;
 	QString m_currentMarketType;
+
+	QHash<QString, QPointer<QNetworkReply>> m_activeHistoryReplies;
 };

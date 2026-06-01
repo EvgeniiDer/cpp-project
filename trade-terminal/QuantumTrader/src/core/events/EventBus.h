@@ -4,6 +4,9 @@
 #include<vector>
 #include"../models/Candle.h"
 #include<utility>
+
+#include "core/network/common/NetworkTypes.h"
+
 class EventBus : public QObject
 {
 	Q_OBJECT
@@ -18,8 +21,8 @@ public:
 	EventBus& operator=(const EventBus&) = delete;
 signals:
 	void networkStatusChanged(const QString& exchange, const QString& status);
-	void deepHistoryReady(const QString& exchange, const QString& symbol, const std::vector<Candle>& candles);	
-	void liveCandleReceived(const QString& exchange, const QString& symbol, const  Candle& candle);
+	void deepHistoryReady(int chartId, const QString& exchange, const QString& symbol, const std::vector<Candle>& candles);	
+	void liveCandleReceived(const QString& exchange, const QString& symbol,const ChartInterval& interval, const  Candle& candle);
 	void symbolChanged(const QString& exchange, const QString& symbol, int linkGroupId = 0);
 	void availableSymbolsLoaded(const QList<std::pair<QString,QString>>& symbols);
 private:

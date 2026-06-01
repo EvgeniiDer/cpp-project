@@ -37,7 +37,7 @@ void CandleHistoryManager::loadDeepHistory(const MarketContext& ctx)
 	firstCtx.endTime = 0;
 	m_connector->fetchHistory(firstCtx);
 }
-void CandleHistoryManager::onChunkLoaded(const QString& symbol, const std::vector<Candle>& chunk)
+void CandleHistoryManager::onChunkLoaded(int chartId,const QString& symbol, const std::vector<Candle>& chunk)
 {
 	if (symbol != m_currentSymbol)
 	{
@@ -54,12 +54,12 @@ void CandleHistoryManager::onChunkLoaded(const QString& symbol, const std::vecto
 				});
 			emit historyReady(m_currentSymbol, m_accumulated);
 			//EventBus
-			emit EventBus::instance().deepHistoryReady(m_exchangeName, m_currentSymbol, m_accumulated);
+			emit EventBus::instance().deepHistoryReady(chartId, m_exchangeName, m_currentSymbol, m_accumulated);
 		}else
 		{
 			qWarning() << "[HistoryManager] No history found at all for symbol:" << m_currentSymbol;
 	     	emit historyReady(m_currentSymbol, m_accumulated);
-	    	emit EventBus::instance().deepHistoryReady(m_exchangeName, m_currentSymbol, m_accumulated);
+	    	emit EventBus::instance().deepHistoryReady(chartId, m_exchangeName, m_currentSymbol, m_accumulated);
 		}
 		return;
 	}
@@ -78,13 +78,14 @@ void CandleHistoryManager::onChunkLoaded(const QString& symbol, const std::vecto
 			m_accumulated.erase(m_accumulated.begin(), m_accumulated.begin() + extraCount);
 		}
 		emit historyReady(m_currentSymbol, m_accumulated);
-		emit EventBus::instance().deepHistoryReady(m_exchangeName, m_currentSymbol, m_accumulated);
+		emit EventBus::instance().deepHistoryReady(chartId ,m_exchangeName, m_currentSymbol, m_accumulated);
 		qDebug() << "[HistoryManager] Deep load complete for" << m_currentSymbol << ". Total size:" << m_accumulated.size();
 		return;
 	}
 	qint64 oldestCandleTimeMs = chunk.front().timestamp * 1000;
 	int remainingCandles = m_targetLimit - static_cast<int>(m_accumulated.size());
 	MarketContext nextCtx;
+	nextCtx.chartId = chartId;
 	nextCtx.exchange = m_exchangeName;
 	nextCtx.symbol = m_currentSymbol;
 	nextCtx.marketType = m_currentMarketType;

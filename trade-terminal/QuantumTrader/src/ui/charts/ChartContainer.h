@@ -15,6 +15,7 @@ class ChartContainer : public QWidget
 public:
 	explicit ChartContainer(MarketDataManager* dataManager, const QString& exchange, const QString& symbol, const QString& marketType = "PERP", QWidget * parent = nullptr);
 private:
+	int m_chartId = 0;
 	MarketDataManager* m_dataManager = nullptr;
 	
 	QString m_exchange;

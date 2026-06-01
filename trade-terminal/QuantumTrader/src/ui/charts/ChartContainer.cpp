@@ -15,10 +15,13 @@ ChartContainer::ChartContainer(MarketDataManager* dataManager, const QString& ex
 	, m_marketType(marketType)
 	, m_linkGroupId(0)
 {
+	static std::atomic<int> s_nextChartId{ 1 };
+	m_chartId = s_nextChartId.fetch_add(1);
 	setupUi();
 	
 	if (m_chart)
 	{
+		m_chart->setChartId(m_chartId);
 		m_chart->setContext(m_dataManager, m_exchange, symbol, m_marketType);
 	}
 	if (m_symbolInput)

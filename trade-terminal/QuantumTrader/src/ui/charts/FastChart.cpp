@@ -10,6 +10,13 @@
 #include"../src/core/managers/MarketDataManager.h"
 #include"../src/core/network/common/NetworkTypes.h"
 #include"../src/core/events/EventBus.h"
+namespace
+{
+	bool floatChanged(float a, float b, float eps = 0.001f)
+	{
+		return std::abs(a - b) > eps;
+	}
+}
 FastChart::FastChart(QWidget* parent) : QOpenGLWidget(parent)
 {
 	this->setMouseTracking(true);
@@ -54,10 +61,38 @@ void FastChart::paintGL()
 	{
 		return;
 	}
-	qDebug() << "[PaintGL Check]"
-		<< "Cam(X,Y):" << m_cam.x << m_cam.y
-		<< "Zoom(X,Y):" << m_cam.zoomX << m_cam.zoomY
-		<< "Candles count:" << (m_candleLayer ? m_candleLayer->getCandles().size() : 0);
+	size_t candlesCount = (m_candleLayer ? m_candleLayer->getCandles().size() : 0);
+	if (candlesCount == 0)
+	{
+		glClear(GL_COLOR_BUFFER_BIT);
+		return;
+	}
+#ifdef QT_DEBUG
+	bool camChanged = (floatChanged(m_cam.x, m_lastLoggedCam.x) ||
+		floatChanged(m_cam.y, m_lastLoggedCam.y) ||
+		floatChanged(m_cam.zoomX, m_lastLoggedCam.zoomX) ||
+		floatChanged(m_cam.zoomY, m_lastLoggedCam.zoomY) ||
+		candlesCount != m_lastLoggedCount);
+
+	if (camChanged)
+	{
+		qDebug() << "[PaintGL Check] Win ID:" << m_chartId
+			<< "Cam(X,Y):" << m_cam.x << m_cam.y
+			<< "Zoom(X,Y):" << m_cam.zoomX << m_cam.zoomY
+			<< "Candles count:" << candlesCount;
+
+		// Выводим границы проекции MVP прямо сюда — строго в момент изменения!
+		float halfX = m_cam.zoomX / 2.0f;
+		float halfY = m_cam.zoomY / 2.0f;
+		qDebug() << "[MVP Matrix Check] Win:" << m_chartId
+			<< "Ortho bounds: L:" << (m_cam.x - halfX) << "R:" << (m_cam.x + halfX)
+			<< "B:" << (m_cam.y - halfY) << "T:" << (m_cam.y + halfY);
+
+		// Сохраняем слепок текущего состояния
+		m_lastLoggedCam = m_cam;
+		m_lastLoggedCount = candlesCount;
+	}
+#endif
 	glClear(GL_COLOR_BUFFER_BIT);
  
 	QMatrix4x4 mvp = calculateMvpMatrix();
@@ -117,9 +152,7 @@ QMatrix4x4 FastChart::calculateMvpMatrix()
 
 	float bottom = m_cam.y - halfY;
 	float top = m_cam.y + halfY;
-	qDebug() << "[MVP Matrix Check]"
-		<< "Ortho bounds: L:" << left << "R:" << right
-		<< "B:" << bottom << "T:" << top;
+
 	matrix.ortho(left, right, bottom, top, -1.0f, 1.0f);
 	return matrix;
 }
@@ -140,6 +173,7 @@ void FastChart::switchSymbol(const QString& exchangeName, const QString& symbol,
 		m_candleLayer->setCandles({});
 	}
 	MarketContext ctx;
+	ctx.chartId = m_chartId;
 	ctx.exchange = m_exchangeName;
 	ctx.symbol = m_symbol;
 	ctx.marketType = m_marketType;
@@ -147,7 +181,7 @@ void FastChart::switchSymbol(const QString& exchangeName, const QString& symbol,
 	ctx.limit = m_settings.initialCandleCount;// c запасом при первой загрузки
 
 	m_dataManager->requestHistory(ctx);
-	m_dataManager->subcribeToStream(m_exchangeName, m_symbol, m_marketType);
+	m_dataManager->subcribeToStream(ctx);
 	this->update();
 }
 
@@ -252,6 +286,7 @@ void FastChart::mouseMoveEvent(QMouseEvent* event)
 					m_isLoadingHistory = true;
 
 					MarketContext ctx;
+					ctx.chartId = m_chartId;
 					ctx.exchange = m_exchangeName;
 					ctx.symbol = m_symbol;
 					ctx.marketType = m_marketType;
@@ -405,13 +440,14 @@ void FastChart::setContext(MarketDataManager* manager, const QString& exchangeNa
 	m_marketType = marketType;
 	m_isHistoryLoaded = false;
 
-	m_currentInterval = ChartInterval(ChartInterval::Unit::Minute, 1);
+	m_currentInterval = ChartInterval(ChartInterval::Unit::Minute, 5); // не важно на какой кнопке нажата дефолтные установки на пятиминутки
 
-	QObject::connect(&EventBus::instance(), &EventBus::deepHistoryReady, this, &FastChart::onDeepHistoryReceived);
-	QObject::connect(&EventBus::instance(), &EventBus::liveCandleReceived, this, &FastChart::onLiveCandleReceived);
-	QObject::connect(&EventBus::instance(), &EventBus::symbolChanged, this, &FastChart::onSymbolChanged);
+	QObject::connect(&EventBus::instance(), &EventBus::deepHistoryReady, this, &FastChart::onDeepHistoryReceived, Qt::UniqueConnection);
+	QObject::connect(&EventBus::instance(), &EventBus::liveCandleReceived, this, &FastChart::onLiveCandleReceived, Qt::UniqueConnection);
+	QObject::connect(&EventBus::instance(), &EventBus::symbolChanged, this, &FastChart::onSymbolChanged, Qt::UniqueConnection);
 
 	MarketContext ctx;
+	ctx.chartId = m_chartId;
 	ctx.exchange = m_exchangeName;
 	ctx.symbol = m_symbol;
 	ctx.marketType = m_marketType;
@@ -419,7 +455,7 @@ void FastChart::setContext(MarketDataManager* manager, const QString& exchangeNa
 	ctx.limit = m_settings.initialCandleCount;
 
 	m_dataManager->requestHistory(ctx);//RestApi request
-	m_dataManager->subcribeToStream(m_exchangeName, m_symbol, m_marketType);//WebSocket request
+	m_dataManager->subcribeToStream(ctx);//WebSocket request
 }
 
 void FastChart::switchInterval(const ChartInterval& newInterval)
@@ -435,17 +471,26 @@ void FastChart::switchInterval(const ChartInterval& newInterval)
 		m_candleLayer->setCandles({});
 	}
 	MarketContext ctx;
+	ctx.chartId = m_chartId;
 	ctx.exchange = m_exchangeName;
 	ctx.symbol = m_symbol;
 	ctx.marketType = m_marketType;
 	ctx.interval = m_currentInterval;
 	ctx.limit = m_settings.initialCandleCount;
+
 	m_dataManager->requestHistory(ctx);
+	m_dataManager->subcribeToStream(ctx);
 	this->update();
 }
 
-void FastChart::onDeepHistoryReceived(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles)
+void FastChart::setChartId(int id)
 {
+	m_chartId = id;
+}
+
+void FastChart::onDeepHistoryReceived(int chartId, const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles)
+{
+	if (chartId != m_chartId) return;
 	if (symbol != m_symbol || exchangeName != m_exchangeName) return;
 
 	qDebug() << "[FastChart BUS] Catch deep history for: " << symbol << "Size: " << candles.size();
@@ -460,9 +505,11 @@ void FastChart::onDeepHistoryReceived(const QString& exchangeName, const QString
 	m_isLoadingHistory = false;
 }
 
-void FastChart::onLiveCandleReceived(const QString& exchangeName, const QString& symbol, const Candle& liveCandle)
+void FastChart::onLiveCandleReceived(const QString& exchangeName, const QString& symbol,const ChartInterval& interval, const Candle& liveCandle)
 {
 	if (symbol != m_symbol || exchangeName != m_exchangeName) return;
+	if (interval != m_currentInterval) return;
+	if (!m_isHistoryLoaded || m_candleLayer->getCandles().empty()) return;
 	size_t oldSize = m_candleLayer->getCandles().size();
 	m_candleLayer->updateLiveCandle(liveCandle);
 

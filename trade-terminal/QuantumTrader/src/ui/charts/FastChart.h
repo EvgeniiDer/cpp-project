@@ -34,9 +34,10 @@ public:
 
 		//switch symbol
 	void switchSymbol(const QString& exchangeName, const QString& symbol, const QString& marketType);
+	void setChartId(int);
 public slots:
-	void onDeepHistoryReceived(const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles);
-	void onLiveCandleReceived(const QString& exchangeName, const QString& symbol, const Candle& liveCandle);
+	void onDeepHistoryReceived(int chartId, const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles);
+	void onLiveCandleReceived(const QString& exchangeName, const QString& symbol,const ChartInterval& interval, const Candle& liveCandle);
 	void onSymbolChanged(const QString& exchangeName, const QString& symbol, int groupId);
 protected:
 	void initializeGL() override;
@@ -54,6 +55,12 @@ protected:
 
 
 private:
+#ifdef QT_DEBUG
+	chart::CameraStat m_lastLoggedCam;
+	size_t m_lastLoggedCount = 0;
+#endif
+
+	int m_chartId = 0;
 	void autoScaleY();
 	chart::DragState getZoneAt(const QPointF& pos);
 	chart::DragState m_dragState = chart::DragState::None;

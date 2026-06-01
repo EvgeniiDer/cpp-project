@@ -21,7 +21,7 @@ signals:
 	void historyReady(const QString& symbol, const std::vector<Candle>& fullHistory);
 	void historyChunkAppended(const QString& symbol, int currentSize, int targetSize);
 private slots:
-	void onChunkLoaded(const QString& symbol, const std::vector<Candle>& chunk);
+	void onChunkLoaded(int chartId, const QString& symbol, const std::vector<Candle>& chunk);
 private:
 	IExchangeConnector* m_connector;
 	std::vector<Candle> m_accumulated;

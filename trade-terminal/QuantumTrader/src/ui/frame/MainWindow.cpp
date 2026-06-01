@@ -116,13 +116,13 @@ void MainWindow::setupConnections()
 			// 💡 Пометка на будущее: когда сделаешь красивый статус-бар внизу окна,
 			// ты прямо отсюда будешь писать: m_statusBar->setText(status);
 		});
-	QObject::connect(&EventBus::instance(), &EventBus::deepHistoryReady, this, [](const QString& exchange, const QString& symbol, const std::vector<Candle>& candles)
+	QObject::connect(&EventBus::instance(), &EventBus::deepHistoryReady, this, [](int chartId,const QString& exchange, const QString& symbol, const std::vector<Candle>& candles)
 			{
-				qDebug() << "[Data BUS History]" << exchange << symbol << "Count: " << candles.size();
+				qDebug() << "[Data BUS History]" << chartId << exchange << symbol << "Count: " << candles.size();
 			});
 
-	QObject::connect(&EventBus::instance(), &EventBus::liveCandleReceived, this, [](const QString& exchange, const QString& symbol, const Candle& candle)
+	QObject::connect(&EventBus::instance(), &EventBus::liveCandleReceived, this, [](const QString& exchange,const QString& symbol ,const ChartInterval& interval,  const Candle& candle)
 		{
-			qDebug() << "[Data BUS Live]" << exchange << symbol << "New Tick Price: " << candle.close;
+			qDebug() << "[Data BUS Live]" << exchange << symbol << "[" << interval.toCacheKey() <<"]" << "New Tick Price: " << candle.close;
 		});
 }

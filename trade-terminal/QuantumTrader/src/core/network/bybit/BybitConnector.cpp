@@ -160,6 +160,18 @@ QString BybitConnector::getUiMarketType(const QString& category) const
 
 void BybitConnector::fetchHistory(const MarketContext& ctx)
 {
+	QString targetSymbol = ctx.symbol;
+	int chartId = ctx.chartId;
+	QString requestKey = QString::number(chartId) + "_" + targetSymbol + "_" + ctx.marketType;
+	if (m_activeHistoryReplies.contains(requestKey))
+	{
+		QPointer<QNetworkReply> oldReply = m_activeHistoryReplies.value(requestKey);
+		if (oldReply && oldReply->isRunning())
+		{
+			qWarning() << "[Bybit Rest] ABORTIN duplicate history request for unique key: " << requestKey;
+			oldReply->abort();
+		}
+	}
 	QUrlQuery query;
 	query.addQueryItem("category", getRestCategory(ctx.marketType));
 	query.addQueryItem("symbol", ctx.symbol);
@@ -176,25 +188,32 @@ void BybitConnector::fetchHistory(const MarketContext& ctx)
 	QNetworkRequest request(url);
 	request.setTransferTimeout(10000);
 
+	qDebug() << "[Bybit REST] Sending history request. Key: " << requestKey << "Limit: " << ctx.limit;
+
 	QNetworkReply* reply = m_manager->get(request);
+	m_activeHistoryReplies[requestKey] = reply;
 	QPointer<BybitConnector> self(this);
 	
-	QString targetSymbol = ctx.symbol;
-
-	QObject::connect(reply, &QNetworkReply::finished, this, [self, reply, targetSymbol]()
+	QObject::connect(reply, &QNetworkReply::finished, this, [self, reply, targetSymbol, requestKey, chartId]()
 		{
 			QScopedPointer<QNetworkReply, QScopedPointerDeleteLater> replyGuard(reply);
 
 			if (!self) return;
+			self->m_activeHistoryReplies.remove(requestKey);
+			if (reply->error() == QNetworkReply::OperationCanceledError)
+			{
+				qDebug() << "[Bybit REST] Request successfully canceled for window: " << chartId;
+				return;
+			}
 			if (reply->error() != QNetworkReply::NoError)
 			{
 				QString errStr = reply->errorString();
 				qWarning() << "[BybitConnector] fetchHistory error for: " << targetSymbol << "	Error: " << errStr;
-				emit self->historyLoadFailed(targetSymbol, errStr);
+				emit self->historyLoadFailed(chartId,targetSymbol, errStr);
 				return;
 			}
 			std::vector<Candle>chunk = ByBitParser::parseHistory(reply->readAll());
-			emit self->historyChunkLoaded(targetSymbol, chunk);
+			emit self->historyChunkLoaded(chartId, targetSymbol, chunk);
 		});
 	
 }
@@ -221,24 +240,27 @@ void BybitConnector::fetchHistory(const MarketContext& ctx)
  * - Implement and send the subscription message (JSON) after the socket is connected.
  * - Add error handling and reconnection/backoff logic for production robustness.
  */
-void BybitConnector::subscribeQuotes(const QString& symbol, const QString& marketType)
+void BybitConnector::subscribeQuotes(const MarketContext& ctx)
 {
-	ChartInterval testInterval(ChartInterval::Unit::Minute, 1);
+	m_currentSymbol = ctx.symbol;
+	m_currentInterval = intervalToByBitString(ctx.interval);
+	m_currentMarketType = ctx.marketType;
+	m_wsInterval = ctx.interval;
+	m_pendingWsUrl = getWsEndpoint(ctx.marketType);
 
-	m_currentSymbol = symbol;
-	m_currentInterval = intervalToByBitString(testInterval);
-	m_currentMarketType = marketType;
 
 	m_webSocket->setProperty("currentSymbol", m_currentSymbol);
 	m_webSocket->setProperty("currentInterval", m_currentInterval);
 	if (m_webSocket->state() != QAbstractSocket::UnconnectedState)
 	{
 		qDebug() << "[Bybit WS] Closing existing connection before switching...";
+		m_pendingReconnect = true;
 		m_webSocket->close();
+	}else
+	{
+		qDebug() << "[Bybit WS] Active connection detected. Safely closing before switching to:" << m_currentSymbol;
+		m_webSocket->open(QUrl(m_pendingWsUrl));
 	}
-	QString wsUrl = getWsEndpoint(marketType);
-	qDebug() << "[Bybit WS] Connecting to target market stream: " << wsUrl;
-	m_webSocket->open(QUrl(wsUrl));
 }
 void BybitConnector::fetchAvailableSymbols()
 {
@@ -307,7 +329,7 @@ void BybitConnector::onWsConnected()
 {
 	qDebug() << "[Bybit WS] Connected! Launching pinger and subscribing to quotes...";
 	m_pingTimer->start(20000);
-
+	
 	QString symbol = m_webSocket->property("currentSymbol").toString();
 	QString interval = m_webSocket->property("currentInterval").toString();
 
@@ -322,7 +344,7 @@ void BybitConnector::onWsTextMessageReceived(const QString& message)
 	{
 		std::vector<Candle> liveUpdate = { liveCandle.value() };
 		//EventBus
-		emit EventBus::instance().liveCandleReceived("Bybit", symbol, liveCandle.value());
+		emit EventBus::instance().liveCandleReceived("Bybit", symbol,m_wsInterval, liveCandle.value());
 		qDebug() << "[LIVE]" << symbol << "Price:" << liveCandle->close;
 	}
 }
@@ -333,8 +355,16 @@ void BybitConnector::sendWsPing()
 }
 void BybitConnector::onWsDisconected()
 {
-	qDebug() << "[Bybit WS] Disconnected. Error: " << m_webSocket->errorString();
+	qDebug() << "[Bybit WS] Disconnected. Message / Error: " << m_webSocket->errorString();
 	m_pingTimer->stop();
-	//EventBus
+
+	if (m_pendingReconnect)
+	{
+		m_pendingReconnect = false; 
+		qDebug() << "[Bybit WS] Safe barrier passed. Opening new stream to:" << m_pendingWsUrl;
+		m_webSocket->open(QUrl(m_pendingWsUrl));
+		return;
+	}
+
 	emit EventBus::instance().networkStatusChanged("Bybit", "Disconnected");
 }
