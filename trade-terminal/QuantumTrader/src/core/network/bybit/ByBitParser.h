@@ -1,50 +1,71 @@
 #pragma once
-#include<optional>
-#include<vector>
-#include<QString>
+
 #include<QByteArray>
+#include<QString>
+#include<QStringList>
+#include<vector>
+#include<optional>
+#include"../common/NetworkTypes.h"
 #include"../../models/Candle.h"
+
+
+/**
+ * @brief ByBitParser — статический парсер данных биржи Bybit.
+ *
+ * Все методы статические — класс не хранит состояния.
+ * Разделён на три группы:
+ *  - REST: парсинг ответов от HTTP API
+ *  - WS входящие: парсинг сообщений от WebSocket
+ *  - WS исходящие: построение JSON-сообщений для биржи
+ *  - Конвертеры: вспомогательные преобразования типов
+ */
 class ByBitParser
 {
 public:
-	static int parserPingResponse(const QByteArray& rawData, QString& outErrorMsg);
-	static std::vector<Candle>parseHistory(const QByteArray& rawData);
-	static std::optional<Candle> parseLiveCandle(const QByteArray& jsonMessage, QString& outSymbol);
-	/**
- * 🔍 Парсит JSON-ответ от Bybit API (эндпоинт /v5/market/instruments-info)
- *    и извлекает из него СПИСОК ТОРГОВЫХ СИМВОЛОВ (названий валютных пар).
- *
- * ❗ ВАЖНО: возвращает НЕ ЦЕНЫ, а именно идентификаторы инструментов.
- *           Например: "BTCUSDT", "ETHUSDT" – это символы, а не цены.
- *
- * @param rawData – сырой JSON, пришедший от сервера Bybit.
- * @return QStringList – отсортированный по алфавиту список символов,
- *                       например: ["BTCUSDT", "ETHUSDT", "SOLUSDT"].
- *                       В случае ошибки (retCode != 0) или проблем с парсингом
- *                       возвращается ПУСТОЙ список.
- *
- * @details Что происходит внутри:
- *          1. Читает поле retCode из JSON.
- *          2. Если retCode != 0 – сразу возвращает пустой список (ошибка API).
- *          3. Берёт массив result.list.
- *          4. У каждого объекта в массиве извлекает поле "symbol".
- *          5. Кладет символы в QStringList и сортирует их.
- *          6. При любых исключениях simdjson логирует ошибку в qDebug() и возвращает пустой список.
- *
- * @note Для получения реальных цен используй другой метод (например, /v5/market/tickers).
- *
- * @see Пример JSON, который парсится:
- * {
- *   "retCode": 0,
- *   "result": {
- *     "list": [
- *       { "symbol": "BTCUSDT", ... },
- *       { "symbol": "ETHUSDT", ... }
- *     ]
- *   }
- * }
- */
-	static QStringList parseAvailableSymbols(const QByteArray& rawData);
-	static QString buildSubscriptionRequest(const QString& symbol, const QString& interval);
-	static QString buildPingRequest();
+    // == REST ============================================================================
+
+    /// Парсит ответ на ping-запрос (/v5/market/time).
+    /// @return retCode (0 = успех, иное = ошибка API, -1 = ошибка парсинга)
+    static int parserPingResponse(const QByteArray& rawData, QString& outErrorMsg);
+
+    /// Парсит исторические свечи из ответа /v5/market/kline.
+    /// Bybit отдает свечи в обратном порядке - метод разворачивает их.
+    /// @return Свечи в хронологическом порядке(старые первые).
+    static std::vector<Candle> parseHistory(const QByteArray& rawData);
+	
+    ///Парсит список символов из /v5/market/instruments-info
+    ///@return Отсортированный список символов {"BTCUSTD", "ETHUSDT" ...}
+    static QStringList parseAvailableSymbols(const QByteArray& rawData);
+    
+
+	//== WebSocket входящие сообщения =====================================================
+
+	/// Парсит live-свечу из WS-сообщения.
+    /// Извлекает символ и интервал из топика ("kline.5.BTCUSDT").
+    /// Системные сообщения (pong, subscribe) возвращают nullopt без ошибок.
+    /// @param outSymbol   Выходной параметр: символ ("BTCUSDT")
+    /// @param outInterval Выходной параметр: интервал свечи
+    static std::optional<Candle> parseLiveCandle(const QByteArray& jsonMessage, QString& outSymbol, ChartInterval& outInterval);
+
+    //== WebSocket исходящие сообщения ====================================================
+	/// Строит subscribe JSON для отправки на биржу исходя из аргументов
+	/// @param topic Готовый топик, например "kline.5.BTCUSDT"
+	/// @param reqId Уникальный символ
+    static QString buildSubscriptionRequest(const QString& topic,
+        const QString& reqId);
+
+    /// Строит unsubscribe JSON для отправки на биржу.
+    /// @param topic Топик от которого отписываемся
+    /// @param reqId Уникальный id запроса (обычно symbol)
+    static QString buildUnsubscribeRequest(const QString& topic,
+        const QString& reqId);
+
+    /// Строит ping JSON. req_id уникален (текущее время в мс).
+    static QString buildPingRequest();
+
+    // == Конвертеры ======================================================================
+    /// Конвертирует строку интервала Bybit в ChartInterval.
+    /// "5"→Minute_5, "60"→Hour_1, "240"→Hour_4, "D"→Day_1 и т.д.
+    static ChartInterval intervalFromBybitString(const QString& str);
+
 };

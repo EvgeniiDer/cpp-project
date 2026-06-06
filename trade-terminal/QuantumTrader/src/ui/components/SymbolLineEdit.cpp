@@ -56,7 +56,11 @@ void SymbolLineEdit::setSymbolList(const QList<std::pair<QString, QString>>& sym
 
 }
 
-void SymbolLineEdit::onAvailableSymbolsLoaded(const QList<std::pair<QString,QString>>& symbols)
+void SymbolLineEdit::onAvailableSymbolsLoaded(const QString& exchange,const QList<std::pair<QString,QString>>& symbols)
 {
+	if (exchange.toUpper() != m_exchange.toUpper())
+	{
+		return;
+	}
 	this->setSymbolList(symbols);
 }

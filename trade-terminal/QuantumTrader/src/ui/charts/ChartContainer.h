@@ -28,5 +28,5 @@ private:
 		
 	void setupUi();
 private slots:
-	void onSymbolInputEntered()const;
+	void onSymbolInputEntered();
 };

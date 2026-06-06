@@ -3,19 +3,46 @@
 #include<cstdint>
 #include"../src/core/models/Candle.h"
 #include<QMetaType>
+
+/** * @brief Интервал (таймфрейм) свечи.
+ * @details Состоит из единицы измерения (Unit) и количества этих единиц.
+ * Например, (Minute, 5) → 5-минутные свечи.
+ * * Доступные единицы измерения (Unit):
+ * - Tick: Тик (сделка)
+ * - Volume: По объёму (нестандартный)
+ * - Range: Range-бары (нестандартный)
+ * - Second: Секунды
+ * - Minute: Минуты
+ * - Hour: Часы
+ * - Day: Дни
+ * - Week: Недели
+ * - Month: Месяцы
+ */
 struct ChartInterval
 {
+	/**
+		* @brief Единицы измерения интервала.
+		*/
 	enum class Unit
 	{
+		/// Тик (сделка)
 		Tick,
-		Volume,
-		Range,
-		Second,
-		Minute,
+		/// По объёму (нестандартный)
+		Volume,  
+		/// Range-бары (нестандартный)
+		Range,   
+		/// Секунды
+		Second,  
+		/// Минуты
+		Minute,  
+		/// Часы
 		Hour,
-		Day,
-		Week,
-		Month
+		/// Дни
+		Day, 
+		/// Недели
+		Week,   
+		/// Недели
+		Month    
 	};
 
 	Unit unit;
@@ -97,15 +124,50 @@ enum class ConnectionState
 	Connected,
 	Error
 };
+/**
+ * @brief Тип данных WebSocket-потока.
+ * @details Используется WebSocketPool для изоляции потоков по типу:
+ * каждый тип получает свой пул воркеров, чтобы тяжёлые стаканы
+ * не мешали свечам и наоборот.
+ */
+enum class StreamType
+{
+	/// Свечи (таймфреймы 1m, 5m, 1h и т.д.)
+	Kline,
+
+	/// Стакан заявок (Order Book Depth)
+	OrderBook,
+
+	/// Последние сделки (Public Trades)
+	Trades
+};
+
+/**
+ * @brief Универсальный контекст рыночного запроса.
+ *
+ * Передаётся между слоями: Chart -> MarketDataManager -> Connector -> Pool.
+ * Содержит все параметры для получения исторических данных или подписки.
+ *
+ * Поля:
+ * - chartId: ID графика (для многооконного режима)
+ * - exchange: Имя биржи ("Bybit", "Binance")
+ * - symbol: Торговая пара ("BTCUSDT")
+ * - marketType: Тип рынка ("SPOT", "PERP", "INV_PERP", "OPTION")
+ * - interval: Таймфрейм свечей (ChartInterval)
+ * - limit: Максимум элементов (дефолт 1000)
+ * - endTime: Конечная метка времени в мс (0 = текущее время)
+ * - streamType: Тип WebSocket-потока (Kline / OrderBook / Trades)
+ */
 struct MarketContext
 {
-	int chartId = 0;
-	QString exchange;
-	QString symbol;
-	QString marketType;
-	ChartInterval interval;
-	int limit = 1000;
-	qint64 endTime = 0;
+	int           chartId = 0;            ///< ID графика (многооконный режим)
+	QString       exchange;                  ///< Имя биржи ("Bybit", "Binance")
+	QString       symbol;                    ///< Торговая пара ("BTCUSDT")
+	QString       marketType;                ///< Тип рынка ("SPOT", "PERP"...)
+	ChartInterval interval;                  ///< Таймфрейм свечей
+	int           limit = 1000;         ///< Максимум элементов
+	qint64        endTime = 0;            ///< Конечная метка времени (мс), 0 = сейчас
+	StreamType    streamType = StreamType::Kline; ///< Тип WS-потока
 };
 // 🎯 Регистрация типа в мета-системе Qt.
 // #include нужен компилятору C++, чтобы знать размер структуры в нашем коде.
@@ -116,6 +178,7 @@ struct MarketContext
 // и рабоать между разными потокам в отличии от 	qRegisterMetaType<QList<QPair<QString, QString>>>("QList<QPair<QString,QString>>");
 Q_DECLARE_METATYPE(ChartInterval);
 Q_DECLARE_METATYPE(MarketContext);
+Q_DECLARE_METATYPE(StreamType);
 
 
 

@@ -161,7 +161,17 @@ void FastChart::switchSymbol(const QString& exchangeName, const QString& symbol,
 {
 	if (m_symbol == symbol && m_exchangeName == exchangeName && m_marketType == marketType)return;
 	qDebug() << "[FastChart LINK] Switching chart to: " << exchangeName << symbol;
-
+	if (m_dataManager && !m_symbol.isEmpty())
+	{
+		MarketContext oldCtx;
+		oldCtx.chartId = m_chartId;
+		oldCtx.exchange = m_exchangeName;   // ← ещё старые значения
+		oldCtx.symbol = m_symbol;
+		oldCtx.marketType = m_marketType;
+		oldCtx.interval = m_currentInterval;
+		oldCtx.streamType = StreamType::Kline;
+		m_dataManager->unsubscribeFromStream(oldCtx);
+	}
 	m_exchangeName = exchangeName;
 	m_symbol = symbol;
 	m_marketType = marketType;
@@ -181,7 +191,7 @@ void FastChart::switchSymbol(const QString& exchangeName, const QString& symbol,
 	ctx.limit = m_settings.initialCandleCount;// c запасом при первой загрузки
 
 	m_dataManager->requestHistory(ctx);
-	m_dataManager->subcribeToStream(ctx);
+	m_dataManager->subscribeToStream(ctx);
 	this->update();
 }
 
@@ -444,7 +454,6 @@ void FastChart::setContext(MarketDataManager* manager, const QString& exchangeNa
 
 	QObject::connect(&EventBus::instance(), &EventBus::deepHistoryReady, this, &FastChart::onDeepHistoryReceived, Qt::UniqueConnection);
 	QObject::connect(&EventBus::instance(), &EventBus::liveCandleReceived, this, &FastChart::onLiveCandleReceived, Qt::UniqueConnection);
-	QObject::connect(&EventBus::instance(), &EventBus::symbolChanged, this, &FastChart::onSymbolChanged, Qt::UniqueConnection);
 
 	MarketContext ctx;
 	ctx.chartId = m_chartId;
@@ -455,13 +464,24 @@ void FastChart::setContext(MarketDataManager* manager, const QString& exchangeNa
 	ctx.limit = m_settings.initialCandleCount;
 
 	m_dataManager->requestHistory(ctx);//RestApi request
-	m_dataManager->subcribeToStream(ctx);//WebSocket request
+	m_dataManager->subscribeToStream(ctx);//WebSocket request
 }
 
 void FastChart::switchInterval(const ChartInterval& newInterval)
 {
 	if (m_currentInterval == newInterval) return;
 	qDebug() << "[FastChart] Changing timeframe to: " << newInterval.toCacheKey();
+	if (m_dataManager && !m_symbol.isEmpty())
+	{
+		MarketContext oldCtx;
+		oldCtx.chartId = m_chartId;
+		oldCtx.exchange = m_exchangeName;
+		oldCtx.symbol = m_symbol;
+		oldCtx.marketType = m_marketType;
+		oldCtx.interval = m_currentInterval;  
+		oldCtx.streamType = StreamType::Kline;
+		m_dataManager->unsubscribeFromStream(oldCtx);
+	}
 	m_currentInterval = newInterval;
 	m_isHistoryLoaded = false;
 	m_isLoadingHistory = false;
@@ -479,7 +499,7 @@ void FastChart::switchInterval(const ChartInterval& newInterval)
 	ctx.limit = m_settings.initialCandleCount;
 
 	m_dataManager->requestHistory(ctx);
-	m_dataManager->subcribeToStream(ctx);
+	m_dataManager->subscribeToStream(ctx);
 	this->update();
 }
 
@@ -521,8 +541,4 @@ void FastChart::onLiveCandleReceived(const QString& exchangeName, const QString&
 	this->update();
 }
 
-void FastChart::onSymbolChanged(const QString& exchangeName, const QString& symbol, int groupId)
-{
-	this->switchSymbol(exchangeName, symbol, m_marketType);
-}
 

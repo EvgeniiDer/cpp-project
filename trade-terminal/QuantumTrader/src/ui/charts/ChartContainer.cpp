@@ -72,7 +72,7 @@ void ChartContainer::setupUi()
 	mainLayout->addLayout(topPanelLayout);
 	mainLayout->addWidget(m_chart, 1);
 }
-void ChartContainer::onSymbolInputEntered()const
+void ChartContainer::onSymbolInputEntered()
 {
 	QString newSymbol = m_symbolInput->text().toUpper().trimmed();
 	if (newSymbol.isEmpty()) return;

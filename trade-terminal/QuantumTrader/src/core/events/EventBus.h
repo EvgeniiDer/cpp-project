@@ -24,7 +24,7 @@ signals:
 	void deepHistoryReady(int chartId, const QString& exchange, const QString& symbol, const std::vector<Candle>& candles);	
 	void liveCandleReceived(const QString& exchange, const QString& symbol,const ChartInterval& interval, const  Candle& candle);
 	void symbolChanged(const QString& exchange, const QString& symbol, int linkGroupId = 0);
-	void availableSymbolsLoaded(const QList<std::pair<QString,QString>>& symbols);
+	void availableSymbolsLoaded(const QString& exchange, const QList<std::pair<QString, QString>>& symbols);
 private:
 	explicit EventBus(QObject* parent = nullptr);
 	~EventBus() override = default;

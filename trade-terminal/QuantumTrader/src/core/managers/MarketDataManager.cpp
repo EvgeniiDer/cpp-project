@@ -5,12 +5,12 @@
 MarketDataManager::MarketDataManager(QObject* parent /* = nullptr */)
 	:QObject(parent)
 {
-	QObject::connect(&EventBus::instance(), &EventBus::availableSymbolsLoaded, this, [this](const QList<std::pair<QString, QString>>& symbols)
+	QObject::connect(&EventBus::instance(), &EventBus::availableSymbolsLoaded, this, [this](const QString& exchange, const QList<std::pair<QString, QString>>& symbols)
 		{
 			if (!symbols.isEmpty())
 			{
-				m_cachedSymbols["Bybit"] = symbols;
-				qDebug() << "[DataManager] Successfully intercepted and cached" << symbols.size() << "symbols for Bybit";
+				m_cachedSymbols[exchange] = symbols;
+				qDebug() << "[DataManager] Cached" << symbols.size() << "symbols for" << exchange;
 			}
 		});
 }
@@ -59,7 +59,7 @@ void MarketDataManager::requestHistory(const MarketContext& ctx)
 
 }
 
-void MarketDataManager::subcribeToStream(const MarketContext& ctx)
+void MarketDataManager::subscribeToStream(const MarketContext& ctx)
 {
 	if (m_activeConnectors.contains(ctx.exchange))
 	{
@@ -70,6 +70,22 @@ void MarketDataManager::subcribeToStream(const MarketContext& ctx)
 	{
 		qDebug() << "[DataManager] Cannot subscribe: Connector" << ctx.exchange << "is not active.";
 	}
+}
+
+void MarketDataManager::unsubscribeFromStream(const MarketContext& ctx)
+{
+	if (m_activeConnectors.contains(ctx.exchange))
+	{
+		qDebug() << "[DataManager] Unsubscribing from WS stream for"
+			<< ctx.symbol << "on" << ctx.exchange;
+		m_activeConnectors[ctx.exchange]->unsubcribeQuotes(ctx);
+	}
+	else
+	{
+		qDebug() << "[DataManager] Cannot unsubscribe: Connector"
+			<< ctx.exchange << "is not active.";
+	}
+
 }
 
 QList<std::pair<QString, QString>> MarketDataManager::getCachedSymbols(const QString& exchangeName) const

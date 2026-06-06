@@ -23,7 +23,8 @@ public:
 	void connectTo(const QString& exchangeName);
 
 	void requestHistory(const MarketContext& ctx);
-	void subcribeToStream(const MarketContext& ctx);
+	void subscribeToStream(const MarketContext& ctx);
+	void unsubscribeFromStream(const MarketContext& ctx);
 	QList<std::pair<QString, QString>>getCachedSymbols(const QString& exchangeName)const;
 signals:
 	//TODO WHATCHLIST next!!!

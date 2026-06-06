@@ -38,7 +38,6 @@ public:
 public slots:
 	void onDeepHistoryReceived(int chartId, const QString& exchangeName, const QString& symbol, const std::vector<Candle>& candles);
 	void onLiveCandleReceived(const QString& exchangeName, const QString& symbol,const ChartInterval& interval, const Candle& liveCandle);
-	void onSymbolChanged(const QString& exchangeName, const QString& symbol, int groupId);
 protected:
 	void initializeGL() override;
 	void paintGL() override;

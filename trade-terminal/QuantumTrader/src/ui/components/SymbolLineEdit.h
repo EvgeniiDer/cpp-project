@@ -12,7 +12,7 @@ public:
 	~SymbolLineEdit() = default;
 	void setSymbolList(const QList<std::pair<QString, QString>>& symbols);
 private slots:
-	void onAvailableSymbolsLoaded(const QList<std::pair<QString,QString>>& symbols);
+	void onAvailableSymbolsLoaded(const QString& exchange,const QList<std::pair<QString,QString>>& symbols);
 private:
 	QString m_exchange;
 	QString m_marketType;
