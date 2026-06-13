@@ -187,6 +187,67 @@ std::optional<Candle> ByBitParser::parseLiveCandle(const QByteArray& jsonMessage
 	}
 	return std::nullopt;
 }
+
+std::optional<OrderBookSnapshot> ByBitParser::parseOrderBook(const QByteArray& jsonMessage, QString& outSymbol, bool& outIsDelta)
+{
+	simdjson::dom::parser parser;
+	try
+	{
+		simdjson::dom::element root = parser.parse(reinterpret_cast<const uint8_t*>(jsonMessage.constData()), jsonMessage.size());//из const char* to const uint8_t он заставляет чиать теже самые биты только по другим правилам!!!
+		if (root["topic"].error() != simdjson::SUCCESS)return std::nullopt;
+
+		std::string_view topic = root["topic"].get_string().value();
+		if (!topic.starts_with("orderbook")) return std::nullopt;
+
+		std::string_view type = root["type"].get_string().value();
+		outIsDelta = (type == "delta");
+
+		simdjson::dom::element data = root["data"];
+		std::string_view sym = data["s"].get_string().value();
+		outSymbol = QString::fromUtf8(sym.data(), sym.size());
+
+		OrderBookSnapshot snap; // по идеи созавать каждый раз снэп может быть накладно может .clear и снэп перенести в private хотя хз
+		snap.exchange = "Bybit";
+		snap.symbol = outSymbol;
+
+		for (simdjson::dom::element row : data["b"].get_array().value())
+		{
+			simdjson::dom::array pair = row.get_array().value();
+			simdjson::dom::array::iterator it = pair.begin();
+			OrderBookLevel lv;
+			lv.price = fastParseDouble((*it).get_string().value());
+			++it;
+			lv.qty = fastParseDouble((*it).get_string().value());
+			snap.bids.push_back(lv);
+		}
+		for (simdjson::dom::element row : data["a"].get_array().value())
+		{
+			simdjson::dom::array pair = row.get_array().value();
+			simdjson::dom::array::iterator it = pair.begin();
+			OrderBookLevel lv;
+			lv.price = fastParseDouble((*it).get_string().value());
+			++it;
+			lv.qty = fastParseDouble((*it).get_string().value());
+			snap.asks.push_back(lv);
+		}
+
+		std::sort(snap.asks.begin(), snap.asks.end(), [](const OrderBookLevel& a, const OrderBookLevel& b)
+			{
+				return a.price < b.price;
+			});
+		std::sort(snap.bids.begin(), snap.bids.end(), [](const OrderBookLevel& a, const OrderBookLevel& b)
+			{
+				return a.price > b.price;
+			});
+		return snap;
+
+	}catch (const simdjson::simdjson_error& er)
+	{
+		qDebug() << "[ByBitParser] OrderBook parse error: " << er.what();
+		return std::nullopt;
+	}
+}
+
 //==WebSocket outgoing================================================================
 QString ByBitParser::buildSubscriptionRequest(const QString& topic, const QString& reqId)
 {

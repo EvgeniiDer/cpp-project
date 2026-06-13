@@ -1,10 +1,9 @@
 #include"SymbolLineEdit.h"
 #include<QCompleter>
 
-SymbolLineEdit::SymbolLineEdit(const QString& exchange, const QString& marketType, QWidget* parent /* = nullptr */)
-	: m_exchange(exchange)
-	, m_marketType(marketType)
-	, QLineEdit(parent)
+SymbolLineEdit::SymbolLineEdit(const MarketInstrument& instrument, QWidget* parent /* = nullptr */)
+	: QLineEdit(parent)
+	, m_instrument(instrument)
 {
 	this->setPlaceholderText("Symbol...");
 	this->setFixedWidth(120);
@@ -16,26 +15,28 @@ SymbolLineEdit::SymbolLineEdit(const QString& exchange, const QString& marketTyp
 void SymbolLineEdit::setSymbolList(const QList<std::pair<QString, QString>>& symbols)
 {
 	QStringList filteredList;
-	for (const auto& pair : symbols)
+	const QString exch = m_instrument.exchange.toUpper();
+
+	for (const std::pair<QString, QString>& pair : symbols)
 	{
 		const QString& symbolName = pair.first;
 		const QString& symbolMarket = pair.second;
-		if (m_exchange.toUpper() == "BYBIT")
+		if (exch.toUpper() == "BYBIT")
 		{
-			if (m_marketType == "PERP")
+			if (m_instrument.marketType == "PERP")
 			{
 				if (symbolMarket == "PERP" || symbolMarket == "INV_PERP")
 				{
 					filteredList.append(symbolName);
 				} else
 				{
-					if (symbolMarket == m_marketType)
+					if (symbolMarket == m_instrument.marketType)
 					{
 						filteredList.append(symbolName);
 					}
 				}
 			}
-		} else if(m_exchange.toUpper() == "FINAM" || m_exchange.toUpper() == "ALOR")
+		} else if(exch.toUpper() == "FINAM" || exch.toUpper() == "ALOR")
 		{
 			/// После написание коннектора АЛОР и ФИНАМ
 		}
@@ -58,7 +59,7 @@ void SymbolLineEdit::setSymbolList(const QList<std::pair<QString, QString>>& sym
 
 void SymbolLineEdit::onAvailableSymbolsLoaded(const QString& exchange,const QList<std::pair<QString,QString>>& symbols)
 {
-	if (exchange.toUpper() != m_exchange.toUpper())
+	if (exchange.toUpper() != m_instrument.exchange.toUpper())
 	{
 		return;
 	}

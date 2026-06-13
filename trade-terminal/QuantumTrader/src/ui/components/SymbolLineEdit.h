@@ -8,13 +8,12 @@ class SymbolLineEdit : public QLineEdit
 {
 	Q_OBJECT
 public:
-	explicit SymbolLineEdit(const QString& exchange, const QString& marketType, QWidget* parent = nullptr);
+	explicit SymbolLineEdit(const MarketInstrument& instrument, QWidget* parent = nullptr);
 	~SymbolLineEdit() = default;
 	void setSymbolList(const QList<std::pair<QString, QString>>& symbols);
 private slots:
 	void onAvailableSymbolsLoaded(const QString& exchange,const QList<std::pair<QString,QString>>& symbols);
 private:
-	QString m_exchange;
-	QString m_marketType;
+	MarketInstrument m_instrument;
 	QCompleter* m_complete = nullptr;
 };

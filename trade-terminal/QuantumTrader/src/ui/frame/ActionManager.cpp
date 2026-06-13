@@ -28,6 +28,15 @@ QAction* ActionManager::getAction(const QString& id)
 }
 void ActionManager::initRegistration()
 {
+	registerActionFactory("Tools.OrderBook", [](WindowManager* wm, QObject* p)
+		{
+			QAction* act = new QAction(QObject::tr("Order Book"), p);
+			connect(act, &QAction::triggered, [wm]()
+				{
+					wm->createWindow("OrderBook");
+				});
+			return act;
+		});
 	registerActionFactory("File.NewChart", [](WindowManager* wm, QObject* p)
 		{
 			QAction* act = new QAction(QObject::tr("New Chart"), p);

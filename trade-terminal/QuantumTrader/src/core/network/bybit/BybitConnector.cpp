@@ -373,15 +373,39 @@ void BybitConnector::fetchAvailableSymbols()
  */
 void BybitConnector::onWsMessageReceived(const QString& message)
 {
-	QString symbol;
-	ChartInterval interval;
-	
-	std::optional<Candle> liveCandle = ByBitParser::parseLiveCandle(message.toUtf8(), symbol, interval);
-	if (liveCandle.has_value())
+	QByteArray raw = message.toUtf8();
+
+	// Kline
+	if (message.contains("\"kline."))
 	{
-		emit EventBus::instance().liveCandleReceived(
-			"Bybit", symbol, interval, liveCandle.value());
-		qDebug() << "[LIVE]" << symbol << "Price:" << liveCandle->close;
+		QString symbol;
+		ChartInterval interval;
+		std::optional<Candle> liveCandle =
+			ByBitParser::parseLiveCandle(raw, symbol, interval);
+		if (liveCandle.has_value())
+		{
+			emit EventBus::instance().liveCandleReceived("Bybit", symbol, interval, liveCandle.value());
+			qDebug() << "[LIVE]" << symbol << "Price:" << liveCandle->close;
+		}
+		return;
+	}
+
+	// OrderBook
+	if (message.contains("\"orderbook."))
+	{
+		QString symbol;
+		bool    isDelta = false;
+		std::optional<OrderBookSnapshot> snap =
+			ByBitParser::parseOrderBook(raw, symbol, isDelta);
+		if (snap.has_value())
+		{
+			emit EventBus::instance().orderBookReceived("Bybit", symbol, snap.value(), isDelta);
+			qDebug() << "[ORDERBOOK]" << symbol
+				<< (isDelta ? "delta" : "snapshot")
+				<< "asks:" << snap->asks.size()
+				<< "bids:" << snap->bids.size();
+		}
+		return;
 	}
 }
 

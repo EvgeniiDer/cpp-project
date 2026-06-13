@@ -15,6 +15,8 @@
 #include"../src/core/network/bybit/BybitConnector.h"
 #include"../../core/events/EventBus.h"
 #include"../charts/ChartContainer.h"
+#include "ui/charts/orderbook/OrderBookContainer.h"
+
 MainWindow::MainWindow(QWidget* parent)
 	: QMainWindow(parent)
 {
@@ -73,6 +75,7 @@ void MainWindow::createMenus()
 	QMenu* toolsMenu = menuBar()->addMenu(QObject::tr("&Tools"));
 	toolsMenu->addAction(m_actionManager->getAction("Tools.Properties"));
 	toolsMenu->addAction(m_actionManager->getAction("Tools.ThemeEditor"));
+	toolsMenu->addAction(m_actionManager->getAction("Tools.OrderBook"));
 }
 void MainWindow::setupNetworking()
 {
@@ -95,6 +98,14 @@ void MainWindow::setupManagers()
 	m_windowManager->registryFactory("Chart", [this](QWidget* parent) -> QWidget*
 		{
 			return new ChartContainer(this->m_dataManager, "Bybit", "BTCUSDT", "PERP", parent);
+		});
+	m_windowManager->registryFactory("OrderBook", [this](QWidget* parent) -> QWidget*
+		{
+			MarketInstrument inst;
+			inst.exchange = "Bybit";
+			inst.symbol = "BTCUSDT";
+			inst.marketType = "PERP";
+			return new OrderBookContainer(m_dataManager, inst, parent);
 		});
 	m_windowManager->registryFactory("Properties", [](QWidget* parent) -> QWidget*
 		{

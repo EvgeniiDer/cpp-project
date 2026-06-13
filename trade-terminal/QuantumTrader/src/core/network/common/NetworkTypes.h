@@ -169,6 +169,33 @@ struct MarketContext
 	qint64        endTime = 0;            ///< Конечная метка времени (мс), 0 = сейчас
 	StreamType    streamType = StreamType::Kline; ///< Тип WS-потока
 };
+/**
+ * @brief Инструмент рынка (торговая пара + биржа + тип рынка).
+ *  Идентифицирует уникальный торговый инструмент.
+ * Используется как ключ для кэша, подписок и сравнения.
+ *
+ * Поля:
+ * - exchange: Имя биржи ("Binance", "Bybit", "OKX").
+ * - symbol: Торговая пара ("BTCUSDT", "ETHUSD").
+ * - marketType: Тип рынка ("SPOT" — спот, "PERP" — бессрочный фьючерс,
+ *   "INV_PERP" — инверсный бессрочный, "OPTION" — опцион).
+ */
+struct MarketInstrument
+{
+	QString exchange;
+	QString symbol;
+	QString marketType;
+
+	bool operator==(const MarketInstrument& o) const
+	{
+		return exchange == o.exchange && symbol == o.symbol && marketType == o.marketType;
+	}
+
+	QString toCachKey()const
+	{
+		return exchange + "_" + marketType + "_" + symbol;
+	}
+};
 // 🎯 Регистрация типа в мета-системе Qt.
 // #include нужен компилятору C++, чтобы знать размер структуры в нашем коде.
 // Но макрос обязателен для Qt: он учит универсальный контейнер QVariant
@@ -179,6 +206,7 @@ struct MarketContext
 Q_DECLARE_METATYPE(ChartInterval);
 Q_DECLARE_METATYPE(MarketContext);
 Q_DECLARE_METATYPE(StreamType);
+Q_DECLARE_METATYPE(MarketInstrument)
 
 
 

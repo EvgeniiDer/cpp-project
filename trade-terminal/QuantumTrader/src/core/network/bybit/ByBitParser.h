@@ -7,6 +7,7 @@
 #include<optional>
 #include"../common/NetworkTypes.h"
 #include"../../models/Candle.h"
+#include "ui/charts/orderbook/OrderBookTypes.h"
 
 
 /**
@@ -46,6 +47,8 @@ public:
     /// @param outSymbol   Выходной параметр: символ ("BTCUSDT")
     /// @param outInterval Выходной параметр: интервал свечи
     static std::optional<Candle> parseLiveCandle(const QByteArray& jsonMessage, QString& outSymbol, ChartInterval& outInterval);
+
+    static std::optional<OrderBookSnapshot> parseOrderBook(const QByteArray& jsonMessage, QString& outSymbol, bool& outIsDelta);
 
     //== WebSocket исходящие сообщения ====================================================
 	/// Строит subscribe JSON для отправки на биржу исходя из аргументов

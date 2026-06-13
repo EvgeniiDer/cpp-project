@@ -1,5 +1,7 @@
 #pragma once
-#include<QWidget>
+#include <QWidget>
+#include <atomic>
+#include "core/network/common/NetworkTypes.h"
 
 class QLineEdit;
 class QVBoxLayout;
@@ -11,22 +13,28 @@ class TimeFrameWidget;
 
 class ChartContainer : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	explicit ChartContainer(MarketDataManager* dataManager, const QString& exchange, const QString& symbol, const QString& marketType = "PERP", QWidget * parent = nullptr);
-private:
-	int m_chartId = 0;
-	MarketDataManager* m_dataManager = nullptr;
-	
-	QString m_exchange;
-	QString m_marketType;
-	int m_linkGroupId;
+    explicit ChartContainer(MarketDataManager* dataManager,
+        const QString& exchange,
+        const QString& symbol,
+        const QString& marketType = "PERP",
+        QWidget* parent = nullptr);
 
-	SymbolLineEdit* m_symbolInput = nullptr;
-	TimeFrameWidget* m_timeFrameWidget = nullptr;
-	FastChart* m_chart = nullptr;
-		
-	void setupUi();
+    void setLinkGroupId(int groupId) { m_linkGroupId = groupId; }
+
+private:
+    int m_chartId = 0;
+    int m_linkGroupId = 0;
+    MarketDataManager* m_dataManager = nullptr;
+    MarketInstrument   m_instrument;
+
+    SymbolLineEdit* m_symbolInput = nullptr;
+    TimeFrameWidget* m_timeFrameWidget = nullptr;
+    FastChart* m_chart = nullptr;
+
+    void setupUi();
+
 private slots:
-	void onSymbolInputEntered();
+    void onSymbolInputEntered();
 };
