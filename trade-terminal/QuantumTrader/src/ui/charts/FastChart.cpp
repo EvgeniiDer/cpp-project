@@ -38,6 +38,21 @@ FastChart::FastChart(QWidget* parent) : QOpenGLWidget(parent)
 }
 FastChart::~FastChart()
 {
+	// Снимаем подписку на WebSocket-поток перед уничтожением виджета.
+	// ВАЖНО: interval обязателен — topic строится как "kline.5.BTCUSDT",
+	// без него получим "kline..BTCUSDT" и пул не найдёт подписку.
+	if (m_dataManager && !m_symbol.isEmpty())
+	{
+		MarketContext ctx;
+		ctx.chartId    = m_chartId;
+		ctx.exchange   = m_exchangeName;
+		ctx.symbol     = m_symbol;
+		ctx.marketType = m_marketType;
+		ctx.interval   = m_currentInterval; // ← без этого topic не совпадёт
+		ctx.streamType = StreamType::Kline;
+		m_dataManager->unsubscribeFromStream(ctx);
+	}
+
 	makeCurrent();
 	m_layers.clear();
 	doneCurrent();

@@ -16,6 +16,7 @@
 #include"../../core/events/EventBus.h"
 #include"../charts/ChartContainer.h"
 #include "ui/charts/orderbook/OrderBookContainer.h"
+#include "ui/charts/timeandsales/TimeAndSalesContainer.h"
 
 MainWindow::MainWindow(QWidget* parent)
 	: QMainWindow(parent)
@@ -76,6 +77,7 @@ void MainWindow::createMenus()
 	toolsMenu->addAction(m_actionManager->getAction("Tools.Properties"));
 	toolsMenu->addAction(m_actionManager->getAction("Tools.ThemeEditor"));
 	toolsMenu->addAction(m_actionManager->getAction("Tools.OrderBook"));
+	toolsMenu->addAction(m_actionManager->getAction("Tools.TimeAndSales"));
 }
 void MainWindow::setupNetworking()
 {
@@ -106,6 +108,14 @@ void MainWindow::setupManagers()
 			inst.symbol = "BTCUSDT";
 			inst.marketType = "PERP";
 			return new OrderBookContainer(m_dataManager, inst, parent);
+		});
+	m_windowManager->registryFactory("TimeAndSales", [this](QWidget* parent) -> QWidget*
+		{
+			MarketInstrument inst;
+			inst.exchange   = "Bybit";
+			inst.symbol     = "BTCUSDT";
+			inst.marketType = "PERP";
+			return new TimeAndSalesContainer(m_dataManager, inst, parent);
 		});
 	m_windowManager->registryFactory("Properties", [](QWidget* parent) -> QWidget*
 		{

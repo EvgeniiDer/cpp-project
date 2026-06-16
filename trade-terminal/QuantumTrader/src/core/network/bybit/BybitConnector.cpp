@@ -407,6 +407,16 @@ void BybitConnector::onWsMessageReceived(const QString& message)
 		}
 		return;
 	}
+
+	// Trades (Time & Sales)
+	if (message.contains("\"publicTrade."))
+	{
+		QString symbol;
+		const auto ticks = ByBitParser::parseTrades(raw, symbol);
+		for (const auto& tick : ticks)
+			emit EventBus::instance().tradeReceived("Bybit", symbol, tick);
+		return;
+	}
 }
 
 //private helpers - WebSocket

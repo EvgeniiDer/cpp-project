@@ -6,7 +6,8 @@
 #include<utility>
 
 #include "core/network/common/NetworkTypes.h"
-#include "ui/charts/orderbook/OrderBookTypes.h"
+#include "ui/charts/orderbook/OrderBookDataTypes.h"
+#include "ui/charts/timeandsales/TimeAndSalesDataTypes.h"
 
 class EventBus : public QObject
 {
@@ -27,6 +28,7 @@ signals:
 	void symbolChanged(const QString& exchange, const QString& symbol, int linkGroupId = 0);
 	void availableSymbolsLoaded(const QString& exchange, const QList<std::pair<QString, QString>>& symbols);
 	void orderBookReceived(const QString& exchange, const QString& symbol, const OrderBookSnapshot& snapshot, bool isDelta);
+	void tradeReceived(const QString& exchange, const QString& symbol, const TradeTick& tick);
 private:
 	explicit EventBus(QObject* parent = nullptr);
 	~EventBus() override = default;

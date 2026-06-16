@@ -1,27 +1,26 @@
-
 #include "OrderBookContainer.h"
-#include"OrderBookClassic.h"
-#include<QVBoxLayout>
-#include<QHBoxLayout>
-#include<QDebug>
+#include "OrderBookBase.h"
+#include "OrderBookClassic.h"
 
-#include"../../../core/events/EventBus.h"
-#include"../../../core/managers/MarketDataManager.h"
-#include"../../../core/network/common/NetworkTypes.h"
-#include"../../components/SymbolLineEdit.h"
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QDebug>
 
-OrderBookContainer::OrderBookContainer(MarketDataManager* dataManager,const MarketInstrument& instrument, QWidget* parent)
-	: QWidget(parent)
-	, m_dataManager(dataManager)
-	, m_instrument(instrument)
+#include "../../../core/events/EventBus.h"
+#include "../../../core/managers/MarketDataManager.h"
+#include "../../../core/network/common/NetworkTypes.h"
+#include "../../components/SymbolLineEdit.h"
+
+OrderBookContainer::OrderBookContainer(MarketDataManager* dataManager,
+                                       const MarketInstrument& instrument,
+                                       QWidget* parent)
+    : QWidget(parent)
+    , m_dataManager(dataManager)
+    , m_instrument(instrument)
 {
-	static std::atomic<int> s_nextId{ 1 };
-	/*Защита от гонки что бы два
-	потока не имели одновреммно доступ к данному типу на будущее надо будет
-	переделать так же с ChrartContainer связано с тем что каждый окрытое окно
-	имело свои ID если будет гонка то два потомка могу одновременно доступ к
-	s_nextId atomic блокирует следующая инструкция увеличивает на единици */
-	m_containerId = s_nextId.fetch_add(1);
+    static std::atomic<int> s_nextId{ 1 };
+    m_containerId = s_nextId.fetch_add(1);
+
     setupUi();
 
     QObject::connect(&EventBus::instance(), &EventBus::orderBookReceived,
@@ -31,7 +30,8 @@ OrderBookContainer::OrderBookContainer(MarketDataManager* dataManager,const Mark
     QObject::connect(&EventBus::instance(), &EventBus::symbolChanged,
         this, [this](const QString& exchange, const QString& sym, int groupId)
         {
-            if (m_linkGroupId > 0 && groupId == m_linkGroupId && exchange == m_instrument.exchange)
+            if (m_linkGroupId > 0 && groupId == m_linkGroupId
+                                  && exchange == m_instrument.exchange)
             {
                 MarketInstrument updated = m_instrument;
                 updated.symbol = sym;
@@ -49,6 +49,7 @@ OrderBookContainer::~OrderBookContainer()
         unsubscribe(m_instrument.symbol);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 void OrderBookContainer::setupUi()
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
@@ -75,10 +76,12 @@ void OrderBookContainer::setupUi()
     topLayout->addStretch();
 
     m_orderBook = new OrderBookClassic(this);
+
     mainLayout->addLayout(topLayout);
     mainLayout->addWidget(m_orderBook, 1);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 void OrderBookContainer::onSymbolInputEntered()
 {
     const QString newSymbol = m_symbolInput->text().toUpper().trimmed();
@@ -92,9 +95,11 @@ void OrderBookContainer::onSymbolInputEntered()
         emit EventBus::instance().symbolChanged(m_instrument.exchange, newSymbol, m_linkGroupId);
 }
 
-void OrderBookContainer::onOrderBookReceived(const QString& exchange,const QString& symbol,const OrderBookSnapshot& snapshot, bool isDelta)
+void OrderBookContainer::onOrderBookReceived(const QString& exchange, const QString& symbol,
+                                              const OrderBookSnapshot& snapshot, bool isDelta)
 {
     if (exchange != m_instrument.exchange || symbol != m_instrument.symbol) return;
+
     if (isDelta)
         m_orderBook->applyDelta(snapshot);
     else
@@ -114,9 +119,9 @@ void OrderBookContainer::subscribe(const QString& symbol)
 {
     if (!m_dataManager || symbol.isEmpty()) return;
     MarketContext ctx;
-    ctx.chartId = m_containerId;
-    ctx.exchange = m_instrument.exchange;
-    ctx.symbol = symbol;
+    ctx.chartId    = m_containerId;
+    ctx.exchange   = m_instrument.exchange;
+    ctx.symbol     = symbol;
     ctx.marketType = m_instrument.marketType;
     ctx.streamType = StreamType::OrderBook;
     m_dataManager->subscribeToStream(ctx);
@@ -126,9 +131,9 @@ void OrderBookContainer::unsubscribe(const QString& symbol)
 {
     if (!m_dataManager || symbol.isEmpty()) return;
     MarketContext ctx;
-    ctx.chartId = m_containerId;
-    ctx.exchange = m_instrument.exchange;
-    ctx.symbol = symbol;
+    ctx.chartId    = m_containerId;
+    ctx.exchange   = m_instrument.exchange;
+    ctx.symbol     = symbol;
     ctx.marketType = m_instrument.marketType;
     ctx.streamType = StreamType::OrderBook;
     m_dataManager->unsubscribeFromStream(ctx);

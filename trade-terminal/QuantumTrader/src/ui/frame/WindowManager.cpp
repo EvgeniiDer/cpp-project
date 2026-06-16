@@ -43,7 +43,10 @@ void WindowManager::createWindow(const QString& windowType)
     QString title = windowType + " " + QString::number(m_windowCounter++);
        
     ads::CDockWidget* dock = new ads::CDockWidget(title);
-    dock->setAttribute(Qt::WA_DeleteOnClose);
+    // WA_DeleteOnClose не работает с ADS — при закрытии вкладки ADS вызывает
+    // toggleView(false), а не close(), поэтому виджет просто скрывается и
+    // деструктор не вызывается. DockWidgetDeleteOnClose — родной флаг ADS.
+    dock->setFeature(ads::CDockWidget::DockWidgetDeleteOnClose, true);
 
     QWidget* container = new QWidget();
     QVBoxLayout* layout = new QVBoxLayout(container);

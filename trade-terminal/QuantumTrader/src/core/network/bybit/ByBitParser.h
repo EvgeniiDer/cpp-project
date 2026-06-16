@@ -7,7 +7,8 @@
 #include<optional>
 #include"../common/NetworkTypes.h"
 #include"../../models/Candle.h"
-#include "ui/charts/orderbook/OrderBookTypes.h"
+#include "ui/charts/orderbook/OrderBookDataTypes.h"
+#include "ui/charts/timeandsales/TimeAndSalesDataTypes.h"
 
 
 /**
@@ -49,6 +50,10 @@ public:
     static std::optional<Candle> parseLiveCandle(const QByteArray& jsonMessage, QString& outSymbol, ChartInterval& outInterval);
 
     static std::optional<OrderBookSnapshot> parseOrderBook(const QByteArray& jsonMessage, QString& outSymbol, bool& outIsDelta);
+
+    /// Парсит ленту сделок из WS-сообщения publicTrade.SYMBOL.
+    /// @return Вектор тиков (обычно 1-5 за сообщение)
+    static std::vector<TradeTick> parseTrades(const QByteArray& jsonMessage, QString& outSymbol);
 
     //== WebSocket исходящие сообщения ====================================================
 	/// Строит subscribe JSON для отправки на биржу исходя из аргументов

@@ -248,6 +248,52 @@ std::optional<OrderBookSnapshot> ByBitParser::parseOrderBook(const QByteArray& j
 	}
 }
 
+std::vector<TradeTick> ByBitParser::parseTrades(const QByteArray& jsonMessage, QString& outSymbol)
+{
+	std::vector<TradeTick> result;
+	simdjson::dom::parser parser;
+	try
+	{
+		simdjson::dom::element root = parser.parse(
+			reinterpret_cast<const uint8_t*>(jsonMessage.constData()), jsonMessage.size());
+
+		if (root["topic"].error() != simdjson::SUCCESS) return result;
+
+		std::string_view topic = root["topic"].get_string().value();
+		if (!topic.starts_with("publicTrade")) return result;
+
+		simdjson::dom::array data = root["data"].get_array().value();
+		for (simdjson::dom::element item : data)
+		{
+			TradeTick tick;
+
+			// Timestamp milliseconds → "HH:mm:ss"
+			int64_t ts = static_cast<int64_t>(item["T"].get_int64().value());
+			QDateTime dt = QDateTime::fromMSecsSinceEpoch(ts, Qt::UTC);
+			tick.time = dt.toString("HH:mm:ss");
+
+			// Symbol
+			std::string_view sym = item["s"].get_string().value();
+			outSymbol = QString::fromUtf8(sym.data(), sym.size());
+
+			// Side: "Buy" = true
+			std::string_view side = item["S"].get_string().value();
+			tick.isBuy = (side == "Buy");
+
+			// Price and quantity are strings in Bybit publicTrade
+			tick.price = fastParseDouble(item["p"].get_string().value());
+			tick.qty   = fastParseDouble(item["v"].get_string().value());
+
+			result.push_back(tick);
+		}
+	}
+	catch (const simdjson::simdjson_error& er)
+	{
+		qDebug() << "[ByBitParser] parseTrades error:" << er.what();
+	}
+	return result;
+}
+
 //==WebSocket outgoing================================================================
 QString ByBitParser::buildSubscriptionRequest(const QString& topic, const QString& reqId)
 {

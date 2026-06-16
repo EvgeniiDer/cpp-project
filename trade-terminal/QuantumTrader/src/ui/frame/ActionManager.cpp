@@ -37,6 +37,15 @@ void ActionManager::initRegistration()
 				});
 			return act;
 		});
+	registerActionFactory("Tools.TimeAndSales", [](WindowManager* wm, QObject* p)
+		{
+			QAction* act = new QAction(QObject::tr("Time && Sales"), p);
+			connect(act, &QAction::triggered, [wm]()
+				{
+					wm->createWindow("TimeAndSales");
+				});
+			return act;
+		});
 	registerActionFactory("File.NewChart", [](WindowManager* wm, QObject* p)
 		{
 			QAction* act = new QAction(QObject::tr("New Chart"), p);
