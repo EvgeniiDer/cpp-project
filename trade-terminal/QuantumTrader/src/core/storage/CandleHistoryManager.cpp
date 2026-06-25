@@ -1,6 +1,8 @@
 #include "CandleHistoryManager.h"
 #include <algorithm>
 #include <QDebug>
+#include <QFile>
+
 #include"../events/EventBus.h"
 
 CandleHistoryManager::CandleHistoryManager(IExchangeConnector* connector,const QString& exchangeName, QObject* parent /* = nullptr */) : QObject(parent), m_connector(connector), m_exchangeName(exchangeName)
@@ -36,6 +38,30 @@ void CandleHistoryManager::loadDeepHistory(const MarketContext& ctx)
 	firstCtx.limit = std::min(1000, ctx.limit);
 	firstCtx.endTime = 0;
 	m_connector->fetchHistory(firstCtx);
+}
+bool CandleHistoryManager::exportHistoryToCsv(const QString& filePath) const
+{
+	if (m_accumulated.empty())
+	{
+		return false;
+	}
+	QFile file(filePath);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		return false;
+	}
+	QTextStream out(&file);
+	out << "timestamp,ope,high,low,close,volume\n";
+	for (const Candle& candle : m_accumulated)
+	{
+		out << candle.timestamp << ","
+			<< QString::number(candle.open, 'f', 8) << ","
+			<< QString::number(candle.high, 'f', 8) << ","
+			<< QString::number(candle.low, 'f', 8) << ","
+			<< QString::number(candle.close, 'f', 8) << ","
+			<< QString::number(candle.volume, 'f', 8) << "\n";
+	}
+	return true;
 }
 void CandleHistoryManager::onChunkLoaded(int chartId,const QString& symbol, const std::vector<Candle>& chunk)
 {

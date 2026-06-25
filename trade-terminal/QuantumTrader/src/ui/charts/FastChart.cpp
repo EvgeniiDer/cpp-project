@@ -110,6 +110,7 @@ void FastChart::paintGL()
 #endif
 	glClear(GL_COLOR_BUFFER_BIT);
  
+
 	QMatrix4x4 mvp = calculateMvpMatrix();
 
 	float halfX = m_cam.zoomX / 2.0f;
@@ -347,6 +348,7 @@ void FastChart::wheelEvent(QWheelEvent* event)
 	else if(hoverZone == chart::DragState::ChartArea)
 	{
 		bool isCtrlPressed = event->modifiers() & Qt::ControlModifier;
+
 		if (isCtrlPressed)
 		{
 			if (delta > 0)

@@ -70,21 +70,6 @@ void CandleLayer::paintGL(const chart::ChartContext& context)
 	m_vbo.release();
 	m_vao.release();
 	m_program->release();
-	//if (m_needRebuild)
-	//{
-	////	rebuildVBO();
-	//	m_needRebuild = false;
-	//}
-	////----------------------------------------------------------
-	//if (m_vertexCount == 0 || !m_program || !m_program->isLinked()) return;
-
-	//m_program->bind();
-	//m_program->setUniformValue("mvp_matrix", context.mvpMatrix);
-
-	//m_vao.bind();
-	//glDrawArrays(GL_TRIANGLES, 0, m_vertexCount);
-	//m_vao.release();
-	//m_program->release();
 }
 void CandleLayer::setCandles(const std::vector<Candle>& candles)
 {

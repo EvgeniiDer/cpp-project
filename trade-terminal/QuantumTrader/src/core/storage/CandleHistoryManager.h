@@ -17,6 +17,7 @@ public:
 	explicit CandleHistoryManager(IExchangeConnector* connector, const QString& exchangeName, QObject* parent = nullptr);
 	~CandleHistoryManager()override = default;
 	void loadDeepHistory(const MarketContext& ctx);
+	bool exportHistoryToCsv(const QString& filePath)const;
 signals:
 	void historyReady(const QString& symbol, const std::vector<Candle>& fullHistory);
 	void historyChunkAppended(const QString& symbol, int currentSize, int targetSize);

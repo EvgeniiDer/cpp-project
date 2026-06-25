@@ -35,8 +35,20 @@ find_package(Qt6 REQUIRED COMPONENTS
 set(BUILD_QA_WITH_QT6 ON CACHE BOOL "Build ADS with Qt6" FORCE)
 # 2. Отключаем примеры, чтобы не тратить время на их компиляцию
 set(BUILD_EXAMPLES OFF CACHE BOOL "Disable ADS examples" FORCE)
-
 add_subdirectory("external/ads")
+
+# --- НАСТРОЙКА ИМПОРТИРУЕМОЙ БИБЛИОТЕКИ CATBOOST ---
+add_library(catboost_lib SHARED IMPORTED)
+if(WIN32)
+    set_target_properties(catboost_lib PROPERTIES
+        IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/external/catboost/lib/catboostmodel.lib"
+        IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/external/catboost/lib/catboostmodel.dll"
+    )
+else()
+    set_target_properties(catboost_lib PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/external/catboost/lib/libcatboostmodel.so"
+    )
+endif()
 
 # --- ПОИСК ФАЙЛОВ ---
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS
@@ -62,8 +74,15 @@ target_include_directories(QuantumTrader PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/sr
 target_include_directories(QuantumTrader SYSTEM PRIVATE 
     "${CMAKE_CURRENT_SOURCE_DIR}/external/ads/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/simdjson"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/catboost/include"
 )
 
+if(WIN32)
+    add_custom_command(TARGET QuantumTrader POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/external/catboost/lib/catboostmodel.dll"
+            $<TARGET_FILE_DIR:QuantumTrader>
+    )
+endif()
 # --- ЛИНКОВКА БИБЛИОТЕК ---
 target_link_libraries(QuantumTrader PRIVATE
     Qt6::Core
@@ -73,4 +92,5 @@ target_link_libraries(QuantumTrader PRIVATE
     Qt6::Network
     Qt6::WebSockets
     qtadvanceddocking-qt6
+    catboost_lib
 )

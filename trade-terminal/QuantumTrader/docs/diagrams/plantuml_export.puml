@@ -21,6 +21,7 @@ skinparam PackageBackgroundColor #1F2D3D
 skinparam PackageBorderColor #4F4F4F
 
 ' === КОРЕНЬ ПРИЛОЖЕНИЯ ===
+
 class MainWindow {
     - m_dataManager : MarketDataManager*
     - m_dockManager : ads::CDockManager*

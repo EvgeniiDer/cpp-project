@@ -121,7 +121,7 @@ void OrderBookBase::setDepth(int rows)
  * @param price Цена (положительное число).
  * @return Отформатированная строка с ценой.
  */
-QString OrderBookBase::formatPrice(double price)
+QString OrderBookBase::formatPriceToString(double price)
 {
     if (price >= 10000.0)
     {
@@ -156,23 +156,23 @@ void OrderBookBase::drawHeader(QPainter& p, const QRect& rect)
     p.setFont(f);
     p.setPen(m_colors.headerColor);
 
-    p.drawText(QRectF(4, rect.y(), m_columnPriceWidth - 4, rect.height()),
-               Qt::AlignVCenter | Qt::AlignLeft,  "Price");
-    p.drawText(QRectF(m_columnPriceWidth, rect.y(), m_columnQtyWidth - 4, rect.height()),
-               Qt::AlignVCenter | Qt::AlignRight, "Size");
-    p.drawText(QRectF(m_columnPriceWidth + m_columnQtyWidth, rect.y(), m_columnTotalWidth - 4, rect.height()),
-               Qt::AlignVCenter | Qt::AlignRight, "Total");
+    p.drawText(QRectF(4, rect.y(), m_columnPriceWidth - 4, rect.height()),Qt::AlignVCenter | Qt::AlignLeft,  "Price");
+    p.drawText(QRectF(m_columnPriceWidth, rect.y(), m_columnQtyWidth - 4, rect.height()),Qt::AlignVCenter | Qt::AlignRight, "Size");
+    p.drawText(QRectF(m_columnPriceWidth + m_columnQtyWidth, rect.y(), m_columnTotalWidth - 4, rect.height()),Qt::AlignVCenter | Qt::AlignRight, "Total");
 
-    // ── Вертикальные разделители — яркие полоски для drag-а ──────────
+    // Вертикальные разделители — яркие полоски для drag-а Для изменения цвета менять p.setPen(QPen(QColor.....));
     p.setPen(QPen(QColor(0xff, 0xff, 0xff), 5));
-    auto drawSep = [&](float x) {
-        int xi = static_cast<int>(x);
+    auto drawSep = [&](float x) 
+	{
+        int xi = static_cast<int>(x);// приведение типа приводит аргумент к типу int
         p.drawLine(xi, rect.top() + 2, xi, rect.bottom() - 2);
     };
-    drawSep(m_columnPriceWidth);
+    drawSep(m_columnPriceWidth); 
     drawSep(m_columnPriceWidth + m_columnQtyWidth);
-    if (m_columnTotalWidth > 0.0f)
+    if (m_columnTotalWidth > 0.0f) //набудущее для отключении колонки
+    {
         drawSep(m_columnPriceWidth + m_columnQtyWidth + m_columnTotalWidth);
+    }
 }
 
 void OrderBookBase::drawSpread(QPainter& p, const QRect& rect)
@@ -183,24 +183,27 @@ void OrderBookBase::drawSpread(QPainter& p, const QRect& rect)
     p.drawLine(rect.left(), rect.bottom(), rect.right(), rect.bottom());
 
     const OrderBookSnapshot& snap = m_model.snapshot();
-    if (snap.asks.empty() || snap.bids.empty()) return;
+    if (snap.asks.empty() || snap.bids.empty())
+        return;
 
-    double bestAsk   = snap.asks.front().price;
-    double bestBid   = snap.bids.front().price;
-    double spread    = bestAsk - bestBid;
+    double bestAsk   = snap.asks.front().price;// лучшая цена по биду
+    double bestBid   = snap.bids.front().price;// лучшая цена по аскау
+    double spread    = bestAsk - bestBid;// spread
     double midPrice  = (bestAsk + bestBid) / 2.0;
-    double spreadPct = (midPrice > 0.0) ? (spread / midPrice * 100.0) : 0.0;
+    double spreadPct = (midPrice > 0.0) ? (spread / midPrice * 100.0) : 0.0; // процентное отношение спреда
 
     QFont f = p.font();
-    f.setPixelSize(12); f.setBold(true);
+    f.setPixelSize(12);
+	f.setBold(true);
     p.setFont(f);
     p.setPen(m_colors.textColor);
-    p.drawText(QRectF(0, rect.top(), width() * 0.55f, rect.height()),Qt::AlignVCenter | Qt::AlignRight, formatPrice(midPrice));
+    p.drawText(QRectF(0, rect.top(), this->width() * 0.55f, rect.height()),Qt::AlignVCenter | Qt::AlignRight, formatPriceToString(midPrice));
 
-    f.setBold(false); f.setPixelSize(11);
+    f.setBold(false);
+	f.setPixelSize(11);
     p.setFont(f);
     p.setPen(m_colors.headerColor);
-    p.drawText(QRectF(width() * 0.55f, rect.top(), width() * 0.45f, rect.height()),Qt::AlignVCenter | Qt::AlignLeft,QString("  %1 (%2%)")
+    p.drawText(QRectF(width() * 0.55f, rect.top(), this->width() * 0.45f, rect.height()),Qt::AlignVCenter | Qt::AlignLeft,QString("  %1 (%2%)")
                    .arg(formatTotal(spread))
                    .arg(QString::number(spreadPct, 'f', 3)));
 }
@@ -223,7 +226,7 @@ void OrderBookBase::drawRow(QPainter& p, const QRectF& rect, const RowContext& c
 
     // Цена
     p.setPen(ctx.isAsk ? m_colors.askColor :m_colors.bidColor);
-    p.drawText(QRectF(rect.left() + 4,rect.top(), m_columnPriceWidth - 4,  rect.height()),Qt::AlignVCenter | Qt::AlignLeft, formatPrice(ctx.level.price));
+    p.drawText(QRectF(rect.left() + 4,rect.top(), m_columnPriceWidth - 4,  rect.height()),Qt::AlignVCenter | Qt::AlignLeft, formatPriceToString(ctx.level.price));
 
     // Объём
     p.setPen(m_colors.textColor);
@@ -233,7 +236,7 @@ void OrderBookBase::drawRow(QPainter& p, const QRectF& rect, const RowContext& c
     p.drawText(QRectF(rect.left() + m_columnPriceWidth + m_columnQtyWidth,  rect.top(), m_columnTotalWidth - 4, rect.height()),Qt::AlignVCenter | Qt::AlignRight, formatTotal(total));
 }
 
-/**
+/** НЕИСПОЛЬУЕТЬСЯ
  * @brief Рисует круг объёма в заданном центре с заданным радиусом.
  *
  * @param center     центр круга в координатах виджета
@@ -264,8 +267,7 @@ void OrderBookBase::drawVolumeCircle(QPainter& p, const QPointF& center, float r
         p.setFont(f);
         p.setPen(Qt::white);
 
-        QRectF labelRect(center.x() - radius, center.y() - radius,
-                         radius * 2.0,         radius * 2.0);
+        QRectF labelRect(center.x() - radius, center.y() - radius,radius * 2.0,radius * 2.0);
         p.drawText(labelRect, Qt::AlignCenter, formatQty(qty));
     }
 
@@ -273,19 +275,44 @@ void OrderBookBase::drawVolumeCircle(QPainter& p, const QPointF& center, float r
     p.setBrush(Qt::NoBrush);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Вспомогательные методы
-// ─────────────────────────────────────────────────────────────────────────────
-
+/**
+ * @brief Определяет, находится ли координата X мыши рядом с одним из разделителей колонок.
+ *
+ * @param x Горизонтальная координата курсора (в пикселях, относительно виджета).
+ * @return int Номер разделителя, на который наведён курсор:
+ *         - 0 — разделитель между колонками Price и Size,
+ *         - 1 — между Size и Total,
+ *         - 2 — правая граница колонки Total (если она включена),
+ *         - -1 — курсор далеко от всех разделителей.
+ *
+ * @details Функция проверяет расстояние от x до каждого разделителя.
+ *          Если расстояние не превышает SEPARATOR_HIT_RADIUS (4 пикселя),
+ *          то считается, что курсор «захватил» этот разделитель.
+ *
+ *          Перед проверками убеждаемся, что колонка Price имеет положительную ширину
+ *          (иначе виджет ещё не инициализирован, и проверять бессмысленно).
+ *
+ *          Порядок проверок важен:
+ *          - Сначала проверяется разделитель Price|Size (0),
+ *          - затем Size|Total (1),
+ *          - затем правая граница Total (2) — только если колонка Total существует.
+ *
+ *          Если курсор попадает в зону нескольких разделителей (например, если они
+ *          оказались рядом из‑за малой ширины), возвращается первый совпавший (приоритет слева направо).
+ */
 int OrderBookBase::hitTestColumnSeparator(int x) const
 {
     if (m_columnPriceWidth <= 0.0f) return -1;
-    auto near = [&](float sepX) {
+    auto near = [&](float sepX) 
+	{
         return std::abs(x - static_cast<int>(sepX)) <= SEPARATOR_HIT_RADIUS;
     };
-    if (near(m_columnPriceWidth))                                         return 0;
-    if (near(m_columnPriceWidth + m_columnQtyWidth))                      return 1;
-    if (near(m_columnPriceWidth + m_columnQtyWidth + m_columnTotalWidth)) return 2;
+    if (near(m_columnPriceWidth))
+        return 0;
+    if (near(m_columnPriceWidth + m_columnQtyWidth))                      
+        return 1;
+    if (near(m_columnPriceWidth + m_columnQtyWidth + m_columnTotalWidth)) 
+        return 2;
     return -1;
 }
 
@@ -309,33 +336,33 @@ void OrderBookBase::clampScrollOffset(int totalVirtualRows)
  */
 void OrderBookBase::centerOnSpread()
 {
-    const auto& snap = m_model.snapshot();
+    const OrderBookSnapshot& snap = m_model.snapshot();
     int nAsks = static_cast<int>(snap.asks.size());
-    if (nAsks == 0) { m_scrollOffset = 0; return; }
-
+    if (nAsks == 0)
+    {
+	    m_scrollOffset = 0; return;
+    }
     float availH     = static_cast<float>(height()) - m_headerHeight;
     int   visibleRows = std::max(1, static_cast<int>(availH / m_rowHeight));
     m_scrollOffset   = std::max(0, nAsks - visibleRows / 2);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Mouse events
-// ─────────────────────────────────────────────────────────────────────────────
-
 void OrderBookBase::mousePressEvent(QMouseEvent* event)
 {
-    if (event->button() != Qt::LeftButton) { QWidget::mousePressEvent(event); return; }
+    if (event->button() != Qt::LeftButton)
+    {
+	    QWidget::mousePressEvent(event); 
+    	return;
+    }
 
     const int x = static_cast<int>(event->position().x());
     int sepIdx = hitTestColumnSeparator(x);
     if (sepIdx >= 0)
     {
-        m_dragMode      = DragMode::ResizeColumn;
+        m_dragMode = DragMode::ResizeColumn;
         m_dragColumnIdx = sepIdx;
-        m_dragStartX    = x;
-        m_dragColWidthAtStart = (sepIdx == 0) ? m_columnPriceWidth
-                              : (sepIdx == 1) ? m_columnQtyWidth
-                              :                 m_columnTotalWidth;
+        m_dragStartX = x;
+        m_dragColWidthAtStart = (sepIdx == 0) ? m_columnPriceWidth : (sepIdx == 1) ? m_columnQtyWidth : m_columnTotalWidth;
         setCursor(Qt::SizeHorCursor);
     }
     event->accept();

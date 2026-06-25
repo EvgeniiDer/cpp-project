@@ -43,7 +43,7 @@ void MainWindow::setupUi()
 	resize(1200, 800);
 	setWindowTitle("QuantumTrader Pro");
 }
-void MainWindow::setupOpenGLWarmup()
+void MainWindow::setupOpenGLWarmup()//просто октрывает окно на заднем фоне что бы не было мерцаний
 {
 
 	QOpenGLWidget* warmUpwidget = new QOpenGLWidget(this);
@@ -122,7 +122,7 @@ void MainWindow::setupManagers()
 			return new QWidget(parent); // Replace with your actual PropertiesWidget later
 		});
 
-	// Register Theme Editor (Don't forget this!)
+	// Register Theme Editor (Don't forget this!) ПОКА В СТАДИИ РАЗРАБОТКИ
 	m_windowManager->registryFactory("ThemeEditor", [](QWidget* parent) -> QWidget*
 		{
 			return new ThemeEditorWidget(parent);
