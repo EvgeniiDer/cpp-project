@@ -1,0 +1,12 @@
+# Build output
+/out/
+/build/
+
+# Visual Studio / IDE
+.vs/
+*.user
+CMakeUserPresets.json
+
+# Generated datasets from live test runs
+dataset_test_*.csv
+external/catboost/catboost-linux-x86_64-1.2.10

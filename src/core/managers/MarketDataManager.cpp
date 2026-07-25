@@ -1,0 +1,107 @@
+#include "MarketDataManager.h"
+#include<QDebug>
+#include"../../core/storage/CandleHistoryManager.h"
+#include"../events/EventBus.h"
+MarketDataManager::MarketDataManager(QObject* parent /* = nullptr */)
+	:QObject(parent)
+{
+	QObject::connect(&EventBus::instance(), &EventBus::availableSymbolsLoaded, this, [this](const QString& exchange, const QList<std::pair<QString, QString>>& symbols)//pair symbol and marketType
+		{
+			if (!symbols.isEmpty())
+			{
+				m_cachedSymbols[exchange] = symbols;
+				qDebug() << "[DataManager] Cached" << symbols.size() << "symbols for" << exchange;
+			}
+		});
+	QObject::connect(&EventBus::instance(), &EventBus::instrumentTickSizesLoaded, this, [this](const QString& exchange, const QHash<QString, double>& tickSizes)
+		{
+			if (!tickSizes.isEmpty())
+			{
+				m_tickSizeCache[exchange] = tickSizes;
+				qDebug() << "[DataManager] Cched tick size for" << exchange << ":" << tickSizes.size();
+			}
+		});
+}
+MarketDataManager::~MarketDataManager()
+{
+
+}
+void MarketDataManager::registerFactory(const QString& exchangeName, ConnectorFactory factory)
+{
+	if (!m_factories.contains(exchangeName))
+	{
+		m_factories.insert(exchangeName, factory);
+		qDebug() << "[DataManager] Registered factory for: " << exchangeName;
+	}
+}
+void MarketDataManager::connectTo(const QString& exchangeName)
+{
+	if (m_activeConnectors.contains(exchangeName))
+	{
+		qDebug() << "[DataManager] Already connected to" << exchangeName;
+		return;
+	}
+	if (!m_factories.contains(exchangeName))
+	{
+		qDebug() << "[DataManager] CRITICAL ERROR: Factory for" << exchangeName << "not found";
+		return;
+	}
+	IExchangeConnector* connector = m_factories[exchangeName](this);
+
+	m_activeConnectors.insert(exchangeName, connector);
+
+	CandleHistoryManager* historyManager = new CandleHistoryManager(connector, exchangeName, this);
+	m_historyManagers.insert(exchangeName, historyManager);
+	connector->connect();
+}
+void MarketDataManager::requestHistory(const MarketContext& ctx)
+{
+	if (m_historyManagers.contains(ctx.exchange))
+	{
+		qDebug() << "[DataManager] Passing history request to CandleHistoryManager for:" << ctx.exchange;
+		m_historyManagers[ctx.exchange]->loadDeepHistory(ctx);
+	} else
+	{
+		qDebug() << "[DataManager] Cannot request history: HistoryManager for" << ctx.exchange << "is not active.";
+	}
+
+}
+
+void MarketDataManager::subscribeToStream(const MarketContext& ctx)
+{
+	if (m_activeConnectors.contains(ctx.exchange))
+	{
+		qDebug() << "[DataManager] Subscribing to WS stream for" << ctx.symbol << " on " << ctx.exchange;
+		m_activeConnectors[ctx.exchange]->subscribeQuotes(ctx);
+	}
+	else
+	{
+		qDebug() << "[DataManager] Cannot subscribe: Connector" << ctx.exchange << "is not active.";
+	}
+}
+
+void MarketDataManager::unsubscribeFromStream(const MarketContext& ctx)
+{
+	if (m_activeConnectors.contains(ctx.exchange))
+	{
+		qDebug() << "[DataManager] Unsubscribing from WS stream for"
+			<< ctx.symbol << "on" << ctx.exchange;
+		m_activeConnectors[ctx.exchange]->unsubcribeQuotes(ctx);
+	}
+	else
+	{
+		qDebug() << "[DataManager] Cannot unsubscribe: Connector"
+			<< ctx.exchange << "is not active.";
+	}
+
+}
+
+QList<std::pair<QString, QString>> MarketDataManager::getCachedSymbols(const QString& exchangeName) const
+{
+	return m_cachedSymbols.value(exchangeName);
+}
+double MarketDataManager::getTickSize(const QString& exchangeName, const QString& symbol) const
+{
+	return m_tickSizeCache.value(exchangeName).value(symbol, 0.0);
+}
+
