@@ -71,6 +71,8 @@ namespace
 		QDateTime dt = QDateTime::fromMSecsSinceEpoch(row.timestamp);
 		float hour = static_cast<float>(dt.time().hour());
 		float dayOfWeek = static_cast<float>(dt.date().dayOfWeek());
+		float minute = static_cast<float>(dt.time().minute());
+
 
 		QStringList fields;
 		fields << QString::number(row.bestBid, 'f', 4)
@@ -86,6 +88,7 @@ namespace
 			<< QString::number(row.volumeDepthAsks, 'f', 4)
 			<< QString::number(hour, 'f', 0)
 			<< QString::number(dayOfWeek, 'f', 0)
+			<< QString::number(minute, 'f', 0)
 			<< QString::number(target);
 
 		return fields.join(",") + "\n";
@@ -104,7 +107,7 @@ bool OrderBookCsvExporter::exportToCsv(const QVector<OrderBookFeatureRow>& rows,
 	QTextStream out(&file);
 	out << "best_bid,best_ask,spread,imbalance_l1,imbalance_sma3,"
 		"bid_spoof_drop,ask_spoof_drop,bid_fake_ratio,ask_fake_ratio,"
-		"vol_depth_bids,vol_depth_asks,hour,day_of_week,target\n";
+		"vol_depth_bids,vol_depth_asks,hour,day_of_week,minute,target\n";
 
 	for (int i = 0; i < rows.size(); ++i)
 	{
