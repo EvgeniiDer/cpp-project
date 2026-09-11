@@ -36,4 +36,5 @@ public:
 	// outRow — куда детектор ЗАПИСЫВАЕТ результат (остальные поля не трогает).
 	virtual void detect(const DetectionContext& ctx, OrderBookFeatureRow& outRow) = 0;
 	[[nodiscard]] virtual QString name()const = 0;
+	virtual void reset(){}
 };

@@ -3,6 +3,7 @@
 #include <qcontainerinfo.h>
 
 #include"DetectorMath.h"
+#include "simdjson.h"
 
 QString IcebergDetector::name() const
 {
@@ -129,7 +130,7 @@ IcebergDetector::IcebergSideResult IcebergDetector::processSide(const std::vecto
 				auto it = std::find_if(pending.begin(), pending.end(),
 					[&](const PendingIcebergDepletion& p)
 					{
-						return std::llabs(p.tickKey - key) <= kIcebergWalkTicks;
+						return std::llabs(p.priceTickKey - key) <= kIcebergWalkTicks;
 					});
 				if (it != pending.end())
 				{
@@ -146,6 +147,30 @@ IcebergDetector::IcebergSideResult IcebergDetector::processSide(const std::vecto
 
 	return result;
 }
+
+void IcebergDetector::detect(const DetectionContext& ctx, OrderBookFeatureRow& outRow)
+{
+	if (ctx.currentBook == nullptr || ctx.pendingTrades == nullptr)
+	{
+		return;
+	}
+
+	evictStaleLevels(ctx.currentTimestamp);
+
+	IcebergSideState bidState{ &m_bidLevels, &m_bidPendingDepletions };
+	IcebergSideState askState{ &m_askLevels, &m_askPendingDepletions };
+
+	IcebergSideResult bidResult = processSide(ctx.currentBook->bids, bidState, ctx);
+	IcebergSideResult askResult = processSide(ctx.currentBook->asks, askState, ctx);
+
+	outRow.bidIcebergRefillCount = bidResult.refillCount;
+	outRow.bidIcebergRefillQty = bidResult.refillQty;
+	outRow.askIcebergRefillCount = askResult.refillCount;
+	outRow.askIcebergRefillQty = askResult.refillQty;
+
+
+}
+
 
 
 

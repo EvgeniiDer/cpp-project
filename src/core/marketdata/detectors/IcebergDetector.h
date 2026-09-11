@@ -18,7 +18,7 @@ public:
 	void detect(const DetectionContext& ctx, OrderBookFeatureRow& outRow) override;
 	[[nodiscard]]QString name() const override;
 
-	void reset();
+	void reset()override;
 private:
 	// double lastQty последний известный объем на этом уровне
 	// qint64 lastSeenTimestamp  время последнего обновления уровня (мс)
@@ -63,8 +63,8 @@ private:
 
 	struct IcebergSideResult
 	{
-		int refillCount = 0;
-		float refillQty = 0;
+		int refillCount = 0; //колличестов дозаправок не обьем а сколько раз тоесть каждый раз когда происходит дозаправка инкримент
+		float refillQty = 0;// а это уже колличество в обьеме сколько бло увеличино дозаправок
 	};
 
 	IcebergSideResult processSide(const std::vector<OrderBookLevel>& bookLevels, IcebergSideState sideState, const  DetectionContext& ctx);
