@@ -1,7 +1,7 @@
 #pragma once
 #include <QWidget>
 #include <QColor>
-#include "../src/core/marketdata/OrderBookDataTypes.h"
+#include "../src/core/marketdata/types/OrderBookDataTypes.h"
 #include "OrderBookRenderTypes.h"
 #include "OrderBookModel.h"
 

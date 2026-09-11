@@ -2,7 +2,7 @@
 #include <QWidget>
 #include <QPointer>
 #include <atomic>
-#include "../src/core/marketdata/OrderBookDataTypes.h"
+#include "../src/core/marketdata/types/OrderBookDataTypes.h"
 #include "core/network/common/NetworkTypes.h"
 
 class MarketDataManager;

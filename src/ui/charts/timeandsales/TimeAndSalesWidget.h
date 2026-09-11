@@ -1,7 +1,7 @@
 #pragma once
 #include <QWidget>
 #include <deque>
-#include "../src/core/marketdata/OrderBookDataTypes.h"
+#include "../src/core/marketdata/types/OrderBookDataTypes.h"
 
 class QPainter;
 

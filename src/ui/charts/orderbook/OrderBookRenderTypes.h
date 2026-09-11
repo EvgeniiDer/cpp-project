@@ -1,6 +1,6 @@
 #pragma once
 #include<QColor>
-#include"../src/core/marketdata/OrderBookDataTypes.h"
+#include"../src/core/marketdata/types/OrderBookDataTypes.h"
 
 
 struct OrderBookColors

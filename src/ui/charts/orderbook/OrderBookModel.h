@@ -1,5 +1,5 @@
 #pragma once
-#include "../../src/core/marketdata/OrderBookDataTypes.h"
+#include "../../src/core/marketdata/types/OrderBookDataTypes.h"
 
 /**
  * @brief Модель данных стакана — единственное место где хранятся данные и бизнес-логика.

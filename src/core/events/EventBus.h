@@ -6,7 +6,7 @@
 #include<utility>
 
 #include "core/network/common/NetworkTypes.h"
-#include "../src/core/marketdata/OrderBookDataTypes.h"
+#include "../src/core/marketdata/types/OrderBookDataTypes.h"
 #include<QHash>
 
 class EventBus : public QObject
