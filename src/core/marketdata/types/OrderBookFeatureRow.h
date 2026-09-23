@@ -22,5 +22,10 @@ struct OrderBookFeatureRow
 	float bidIcebergRefillQty = 0.0f;
 	float askIcebergRefillQty = 0.0f;
 
+
+	int bidIcebergInstantRefillCount = 0;
+	int askIcebergInstantRefillCount = 0;
+	float bidIcebergInstantRefillQty = 0.0f;
+	float askIcebergInstantRefillQty = 0.0f;
 	bool isValid = false;
 };

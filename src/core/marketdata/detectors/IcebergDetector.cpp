@@ -14,8 +14,8 @@ void IcebergDetector::reset()
 {
 	m_bidLevels.clear();
 	m_askLevels.clear();
-	m_bidPendingDepletions.clear();
-	m_askPendingDepletions.clear();
+	m_bidWalkCandidates.clear();
+	m_askWalkCandidates.clear();
 }
 
 qint64 IcebergDetector::priceToTickKey(const double price, const double tickSize) 
@@ -67,10 +67,10 @@ IcebergDetector::IcebergSideResult IcebergDetector::processSide(const std::vecto
 	// Чистим устаревших кандидатов на "переставленный" айсберг - если
 	// дозаправка не случилась за kIcebergWalkWindowMs, айсберг, скорее
 	// всего, просто закончился и больше не появится.
-	std::deque<PendingIcebergDepletion>& pending = *sideState.pendingDepletion;
-	while (!pending.empty() && ctx.currentTimestamp - pending.front().depletionTimestamp > kIcebergWalkWindowMs)
+	std::deque<IcebergWalkCandidate>& walkCandidates = *sideState.walkCandidates;
+	while (!walkCandidates.empty() && ctx.currentTimestamp - walkCandidates.front().createdTimestamp > kIcebergWalkWindowMs)
 	{
-		pending.pop_front();
+		walkCandidates.pop_front();
 	}
 
 	std::map<qint64, IcebergLevelState>& state = *sideState.levelStates;
@@ -100,13 +100,15 @@ IcebergDetector::IcebergSideResult IcebergDetector::processSide(const std::vecto
 			// Объём уменьшился - проверяем, реальная ли это проторговка.
 			const double traded = DetectorMath::sumTradedQtyNearPrice(*ctx.pendingTrades, price, ctx.tickTolerance);
 			const double explainedRatio = traded / drop;
+			// если проторговка была 28 а drop  30 28/30 = 0.93 это небольшая погрешность и можно сказать что у нас было реальная
+			// проторговка которая обьясняет снижение обьема в стакане на данном уровне мы дальше сравниваем с 	static constexpr double kExplainedRatioThreshold = 0.9(тоесть тут мы говорим о погрешности небльшой)
 
 			if (explainedRatio >= kExplainedRatioThreshold)
 			{
 				// Похоже на реальное исполнение (не спуф) - берём уровень
 				// "на карандаш": если объём сюда вернётся - это дозаправка.
 				entry.awaitingRefill = true;
-				pending.push_back({ key, ctx.currentTimestamp, traded });
+				walkCandidates.push_back({ key, ctx.currentTimestamp, traded });
 			} else
 			{
 				// Объём пропал необъяснимо - это епархия SpoofDetector,
@@ -127,17 +129,24 @@ IcebergDetector::IcebergSideResult IcebergDetector::processSide(const std::vecto
 			{
 				// Дозаправки тут не ждали - может, айсберг "переставился"
 				// на соседний тик? Ищем ближайшего кандидата в очереди.
-				auto it = std::find_if(pending.begin(), pending.end(),
-					[&](const PendingIcebergDepletion& p)
+				auto it = std::find_if(walkCandidates.begin(), walkCandidates.end(),[&](const IcebergWalkCandidate& p)
 					{
 						return std::llabs(p.priceTickKey - key) <= kIcebergWalkTicks;
 					});
-				if (it != pending.end())
+				if (it != walkCandidates.end())
 				{
 					result.refillCount += 1;
 					result.refillQty += static_cast<float>(refill);
-					pending.erase(it);
+					walkCandidates.erase(it);
 				}
+			}
+		} else // drop == 0.0
+		{
+			const double traded = DetectorMath::sumTradedQtyNearPrice(*ctx.pendingTrades, price, ctx.tickTolerance);
+			if (traded > 0.0)
+			{
+				result.instantRefillCount += 1;
+				result.instantRefillQty += static_cast<float>(traded);
 			}
 		}
 
@@ -157,8 +166,8 @@ void IcebergDetector::detect(const DetectionContext& ctx, OrderBookFeatureRow& o
 
 	evictStaleLevels(ctx.currentTimestamp);
 
-	IcebergSideState bidState{ &m_bidLevels, &m_bidPendingDepletions };
-	IcebergSideState askState{ &m_askLevels, &m_askPendingDepletions };
+	IcebergSideState bidState{ &m_bidLevels, &m_bidWalkCandidates };
+	IcebergSideState askState{ &m_askLevels, &m_askWalkCandidates };
 
 	IcebergSideResult bidResult = processSide(ctx.currentBook->bids, bidState, ctx);
 	IcebergSideResult askResult = processSide(ctx.currentBook->asks, askState, ctx);
@@ -168,7 +177,10 @@ void IcebergDetector::detect(const DetectionContext& ctx, OrderBookFeatureRow& o
 	outRow.askIcebergRefillCount = askResult.refillCount;
 	outRow.askIcebergRefillQty = askResult.refillQty;
 
-
+	outRow.bidIcebergInstantRefillCount = bidResult.instantRefillCount;
+	outRow.bidIcebergInstantRefillQty = bidResult.instantRefillQty;
+	outRow.askIcebergInstantRefillCount = askResult.instantRefillCount;
+	outRow.askIcebergInstantRefillQty = askResult.instantRefillQty;
 }
 
 

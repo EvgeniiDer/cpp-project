@@ -35,7 +35,7 @@ private:
 	// уровне - висит короткое время (kIcebergWalkWindowMs), пока мы ждём,
 	// не появится ли объём обратно рядом (переставленный айсберг).
 	// Если не появился вовремя - запись просто протухает и удаляется.
-	struct PendingIcebergDepletion
+	struct IcebergWalkCandidate
 	{
 		// Цена уровня, где произошло исполнение - округлённая до тика
 		// (результат priceToTickKey), а не "сырая" цена с плавающей точкой.
@@ -46,7 +46,7 @@ private:
 		// Когда была создана эта запись (currentTimestamp на момент постановки
 		// уровня "в очередь ожидания"). По ней проверяем, не истёк ли срок
 		// ожидания дозаправки: currentTimestamp - depletionTimestamp > kIcebergWalkWindowMs.
-		qint64 depletionTimestamp = 0;
+		qint64 createdTimestamp = 0;
 
 		// Сколько объёма реально проторговалось в этот момент (traded).
 		// Сейчас нигде не читается при поиске совпадения - записано "про
@@ -58,13 +58,15 @@ private:
 	struct  IcebergSideState
 	{
 		std::map<qint64, IcebergLevelState>* levelStates = nullptr;
-		std::deque<PendingIcebergDepletion>* pendingDepletion = nullptr;
+		std::deque<IcebergWalkCandidate>* walkCandidates = nullptr;
 	};
 
 	struct IcebergSideResult
 	{
 		int refillCount = 0; //колличестов дозаправок не обьем а сколько раз тоесть каждый раз когда происходит дозаправка инкримент
 		float refillQty = 0;// а это уже колличество в обьеме сколько бло увеличино дозаправок
+		int instantRefillCount = 0;
+		float instantRefillQty = 0;
 	};
 
 	IcebergSideResult processSide(const std::vector<OrderBookLevel>& bookLevels, IcebergSideState sideState, const  DetectionContext& ctx);
@@ -83,6 +85,6 @@ private:
 
 	std::map<qint64, IcebergLevelState> m_bidLevels;
 	std::map<qint64, IcebergLevelState> m_askLevels;
-	std::deque<PendingIcebergDepletion> m_bidPendingDepletions;
-	std::deque<PendingIcebergDepletion> m_askPendingDepletions;
+	std::deque<IcebergWalkCandidate> m_bidWalkCandidates;
+	std::deque<IcebergWalkCandidate> m_askWalkCandidates;
 };

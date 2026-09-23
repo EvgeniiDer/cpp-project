@@ -2,6 +2,7 @@
 #include <QWidget>
 #include <atomic>
 #include "core/network/common/NetworkTypes.h"
+#include <QPointer>
 
 class QLineEdit;
 class QVBoxLayout;
@@ -26,7 +27,7 @@ public:
 private:
     int m_chartId = 0;
     int m_linkGroupId = 0;
-    MarketDataManager* m_dataManager = nullptr;
+    QPointer<MarketDataManager> m_dataManager;
     MarketInstrument   m_instrument;
 
     SymbolLineEdit* m_symbolInput = nullptr;

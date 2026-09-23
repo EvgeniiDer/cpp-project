@@ -4,6 +4,7 @@
 #include<QHash>
 #include<QString>
 #include<functional>
+#include<QPointer>
 
 namespace ads
 {
@@ -27,5 +28,5 @@ private:
 	QHash<QString, WidgetFactory> m_factories;
 	int m_windowCounter;
 
-	MarketDataManager* m_dataManager{ nullptr };
+	QPointer<MarketDataManager> m_dataManager;
 };

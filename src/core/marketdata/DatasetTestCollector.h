@@ -5,6 +5,7 @@
 #include<QHash>
 #include"OrderBookHistoryManager.h"
 #include"ui/charts/orderbook/OrderBookModel.h"
+#include<QPointer>
 
 class MarketDataManager;
 
@@ -18,7 +19,7 @@ public slots:
 	void onTickSizesLoaded(const QString& exchange, const QHash<QString, double>& tickSizes);
 	void onExportTimer();
 private:
-	MarketDataManager* m_dataManager;
+	QPointer<MarketDataManager> m_dataManager;
 	QString m_exchange;
 	QString m_symbol;
 

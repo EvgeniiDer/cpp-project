@@ -6,6 +6,7 @@
 #include <atomic>
 #include "ChartTypes.h" 
 #include"../../core/network/common/NetworkTypes.h"
+#include<QPointer>
 
 class CandleLayer;
 class GridLayer;
@@ -85,7 +86,7 @@ private:
 	AxisLayer* m_axisLayer = nullptr;
 	CrosshairLayer* m_crosshairLayer = nullptr;
 
-	MarketDataManager* m_dataManager{ nullptr };
+	QPointer<MarketDataManager> m_dataManager;
 	QString m_exchangeName;
 	QString m_symbol;
 	QString m_marketType;
