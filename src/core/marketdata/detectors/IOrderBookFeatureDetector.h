@@ -1,6 +1,7 @@
 #pragma once
 #include"../types/OrderBookDataTypes.h"
 #include"../types/OrderBookFeatureRow.h"
+#include "core/marketdata/log/MarketEventLog.h"
 // prevBook       - предыдущий снепшот стакана (m_prev1 из OrderBookHistoryManager).
 //                  Может быть "пустым" (дефолтным) на первом кадре; проверяйте hasPrevBook.
 // hasPrevBook    - есть ли валидный prevBook (аналог m_hasPrev1).
@@ -20,6 +21,8 @@ struct DetectionContext
 	double tickTolerance = 0.0;
 	const std::vector<TradeTick>* pendingTrades = nullptr;
 	int depthLevels = 5;
+
+	MarketEventLog* eventLog = nullptr;
 };
 
 

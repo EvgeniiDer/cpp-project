@@ -1,0 +1,73 @@
+Add MarketEventLog and AggressiveIcebergDetector skeleton, harden iceberg detection
+
+- Add MarketEventLog (core/marketdata/log/): generic, extensible event
+  log shared across detectors. Persists events (timestamp, side, price,
+  type, magnitude) to disk as CSV, reloads on startup, evicts entries
+  older than a configurable retention window. Lets any detector check
+  for recent similar activity near a given price without duplicating
+  storage logic.
+
+- Add AggressiveIcebergDetector header (core/marketdata/detectors/):
+  detects "sweep" behavior - several consecutive order book levels
+  wiped out in one frame by explained trade volume, as opposed to
+  IcebergDetector's same-tick quiet refill pattern. Tracks swept level
+  count, swept qty, and rested qty (leftover aggressor volume that
+  settles as a new resting order at the sweep boundary). Implementation
+  pending.
+
+- DetectionContext (IOrderBookFeatureDetector.h): add eventLog pointer
+  so any detector can read/write MarketEventLog.
+
+- IcebergDetector: rename m_bidPendingDepletions/m_askPendingDepletions
+  to m_bidWalkCandidates/m_askWalkCandidates for consistency with
+  IcebergWalkCandidate/walkCandidates naming used elsewhere in the
+  file. Add instant-refill detection: when a trade hits a level but its
+  visible qty doesn't drop, the hidden portion refilled within the same
+  snapshot interval - previously invisible to the drop-then-wait
+  pattern.
+
+- OrderBookFeatureRow: add bidIcebergInstantRefillCount/Qty and
+  askIcebergInstantRefillCount/Qty fields for the new signal.
+
+- FastChart/ChartContainer/WindowManager/DatasetTestCollector: replace
+  raw MarketDataManager* with QPointer<MarketDataManager> - fixes a
+  crash on shutdown where MarketDataManager (an early-added MainWindow
+  child) was destroyed before later-added chart widgets that still
+  referenced it in their destructors.
+  
+  Добавлен MarketEventLog и заголовок AggressiveIcebergDetector, доработан IcebergDetector
+
+- Добавлен MarketEventLog (core/marketdata/log/): общий, расширяемый лог
+  событий для всех детекторов. Сохраняет события (время, сторона, цена,
+  тип, magnitude) на диск в виде CSV, подгружает их при старте, отсекает
+  записи старше заданного окна хранения. Позволяет любому детектору
+  проверить, была ли недавно похожая активность рядом с конкретной ценой,
+  не дублируя логику хранения в каждом детекторе отдельно.
+
+- Добавлен заголовок AggressiveIcebergDetector (core/marketdata/detectors/):
+  детектирует паттерн "sweep" - несколько уровней стакана подряд вычищаются
+  за один кадр объяснённым сделками объёмом, в отличие от тихой дозаправки
+  IcebergDetector в рамках одного тика. Считает количество вычищенных
+  уровней, снятый объём и "остаток" агрессора, осевший новой заявкой на
+  границе (когда объёма не хватило пробить дальше). Реализация (.cpp) -
+  в следующей итерации.
+
+- DetectionContext (IOrderBookFeatureDetector.h): добавлен указатель
+  eventLog, чтобы любой детектор мог читать/писать в MarketEventLog.
+
+- IcebergDetector: m_bidPendingDepletions/m_askPendingDepletions
+  переименованы в m_bidWalkCandidates/m_askWalkCandidates - для
+  единообразия с уже используемыми в файле именами IcebergWalkCandidate/
+  walkCandidates. Добавлена детекция "мгновенной" дозаправки: если сделка
+  прошла у уровня, а видимый объём не упал - скрытая часть айсберга
+  дозаправила уровень в том же интервале между снэпшотами, что раньше было
+  невидимо для схемы "просадка → ожидание → возврат".
+
+- OrderBookFeatureRow: добавлены поля bidIcebergInstantRefillCount/Qty и
+  askIcebergInstantRefillCount/Qty под новый сигнал.
+
+- FastChart/ChartContainer/WindowManager/DatasetTestCollector: сырой
+  MarketDataManager* заменён на QPointer<MarketDataManager> - фикс краша
+  при закрытии приложения, когда MarketDataManager (рано добавленный
+  ребёнок MainWindow) уничтожался раньше графиков, которые всё ещё
+  обращались к нему в своих деструкторах.
