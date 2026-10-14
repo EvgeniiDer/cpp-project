@@ -1,5 +1,8 @@
 #pragma once
 #include"../types/OrderBookDataTypes.h"
+#include<cmath>
+#include<vector>
+
 
 namespace DetectorMath
 {
@@ -21,5 +24,17 @@ namespace DetectorMath
 			}
 		}
 		return sum;
+	}
+	inline double sumTradedQtyAtPriceByAggressor(const std::vector<TradeTick>& trades, double price, double priceTolerance, bool aggressorIsBuy)
+	{
+		double sum = 0.0;
+		for (const TradeTick& t : trades)
+		{
+			if (t.isBuy == aggressorIsBuy && std::fabs(t.price - price) <= priceTolerance)
+			{
+				sum += t.qty;
+			}
+		}
+	return sum;
 	}
 }

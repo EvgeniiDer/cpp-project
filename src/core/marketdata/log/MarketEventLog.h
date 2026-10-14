@@ -10,11 +10,11 @@ enum class MarketEventType : std::uint8_t
 
 struct MarketEvent
 {
-	qint64 timestamp = 0;
-	QString side;
-	double price = 0.0;
+	qint64 timestamp = 0; //(mc)
+	QString side; //bid ask
+	double price = 0.0; //price
 	MarketEventType type = MarketEventType::Sweep;
-	float magnitude = 0.0f;
+	float magnitude = 0.0f; //насколько большое пока в разработке!!
 };
 
 class MarketEventLog
@@ -35,7 +35,7 @@ private:
 	static constexpr int kLogLineFieldCount = 5;
 
 	QString m_logFilePath;
-	qint64 m_retentionMs;
+	qint64 m_retentionMs; // СРОК ХРАНЕНИЯ НЕ УСТАНОВЛЕН УСТАНОВИТЬ!!!!!!
 	std::deque<MarketEvent> m_events;
 
 };

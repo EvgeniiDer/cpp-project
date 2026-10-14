@@ -28,10 +28,13 @@ private:
 
 	SweepSideResult processSide(const std::vector<OrderBookLevel>& prevLevels,
 		const std::vector<OrderBookLevel>& currentLevels,
-		const DetectionContext& ctx) const;
+		const DetectionContext& ctx, bool aggressorIsBuy) const;
 
 	[[nodiscard]] static double findQtyAtPrice(const std::vector<OrderBookLevel>& levels, double price, double tolerance);
 
 	static constexpr int kMinSweepLevels = 2;
+	static constexpr int kSweepScanDepth = 10;
 	static constexpr double kExplainedRatioThreshold = 0.9;
+	static constexpr int kRepeatZoneTicks = 3;
+
 };

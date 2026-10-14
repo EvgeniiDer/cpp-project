@@ -27,5 +27,18 @@ struct OrderBookFeatureRow
 	int askIcebergInstantRefillCount = 0;
 	float bidIcebergInstantRefillQty = 0.0f;
 	float askIcebergInstantRefillQty = 0.0f;
+
+	int bidSweepLevels = 0;
+	int askSweepLevels = 0;
+	float bidSweepQty = 0.0f;
+	float askSweepQty = 0.0f;
+	float bidSweepRestedQty = 0.0f;
+	float askSweepRestedQty = 0.0f;
+	int bidSweepRepeatCount = 0;
+	int askSweepRepeatCount = 0;
+
 	bool isValid = false;
+
+	
+
 };
