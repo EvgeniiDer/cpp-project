@@ -19,9 +19,10 @@ endif()
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
-
-set(CMAKE_PREFIX_PATH "B:/Qt/6.11.0/msvc2022_64") 
-
+# set(CMAKE_PREFIX_PATH "E:/Qt/6.12.0/msvc2022_64") 
+if(DEFINED ENV{QT_ROOT})
+    list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_ROOT}")
+endif()
 # Находим пакеты Qt6
 find_package(Qt6 REQUIRED COMPONENTS 
     Core 
@@ -30,9 +31,11 @@ find_package(Qt6 REQUIRED COMPONENTS
     OpenGLWidgets
     Network
     WebSockets
+    Test
 )
 
 set(BUILD_QA_WITH_QT6 ON CACHE BOOL "Build ADS with Qt6" FORCE)
+set(ADS_VERSION "4.4.1" CACHE STRING "Qt-ADS version" FORCE)
 # 2. Отключаем примеры, чтобы не тратить время на их компиляцию
 set(BUILD_EXAMPLES OFF CACHE BOOL "Disable ADS examples" FORCE)
 add_subdirectory("external/ads")
@@ -94,3 +97,16 @@ target_link_libraries(QuantumTrader PRIVATE
     qtadvanceddocking-qt6
     catboost_lib
 )
+
+enable_testing()
+
+function(add_qt_test name)
+    add_executable(${name} tests/${name}.cpp ${ARGN})
+    target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    target_link_libraries(${name} PRIVATE Qt6::Core Qt6::Test)
+    add_test(NAME ${name} COMMAND ${name})
+endfunction()
+
+add_qt_test(AggressiveIcebergDetectorTest)
+add_qt_test(DetectorMathTest)
+add_qt_test(MarketEventLogTest src/core/marketdata/log/MarketEventLog.cpp)

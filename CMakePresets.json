@@ -14,10 +14,10 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
-        "CMAKE_PREFIX_PATH": "B:/Qt/6.10.1/msvc2022_64"
+        "CMAKE_PREFIX_PATH": "$env{QT_ROOT}"
       },
       "environment": {
-        "PATH": "B:/Qt/6.10.1/msvc2022_64/bin;$penv{PATH}"
+        "PATH": "$env{QT_ROOT}/bin;$penv{PATH}"
       }
     },
     {
