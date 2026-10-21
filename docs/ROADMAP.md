@@ -69,11 +69,28 @@ core/storage/BinaryStorage.h, core/network/finam, ui/watchlist, ui/portfolio.
       Решить: пропускать такую строку
 - [ ] Устаревание при загрузке: комментарий говорит "от текущего момента",
       код считает от timestamp последней записи (loadFromDisk)
-- [ ] Потеря точности цены в файле: QTextStream пишет 6 значащих цифр,
-      67123.45 -> 67123.5. Исправление: out.setRealNumberPrecision(10)
-      (тест record_price_keepsPrecisionAfterReload)
+- [x] Потеря точности цены в файле: QTextStream писал 6 значащих цифр,
+      67123.45 -> 67123.5. Исправлено: QString::number(price, 'g', kPricePrecision),
+      kPricePrecision = 17 (тест record_price_keepsPrecisionAfterReload)
+- [ ] События, пришедшие не по порядку времени (меньший timestamp после большего),
+      не вытесняются: evictStale смотрит только на начало деки. Сейчас такое событие
+      остаётся и считается в countNear. Решить: игнорировать или вытеснять сразу.
+      Зафиксировать тестом record_outOfOrderEvent_behavesAsDecided
 - [ ] magnitude события: "насколько большое, пока в разработке" (MarketEventLog.h:17)
 - [ ] Мелочи: <Qfile>/<QTextstream> с неверным регистром, нет <cstdint> для uint8_t
+
+### Время (timestamp)
+- [x] DatasetTestCollector: recordState получает snapshot.timestamp (время Bybit,
+      поле ts), а не QDateTime::currentMSecsSinceEpoch()
+- [x] OrderBookModel::applyDelta обновляет m_snapshot.timestamp = delta.timestamp
+      (раньше после дельт в модели оставалось время последнего полного снимка)
+- [ ] Правило: парсер каждой биржи обязан отдавать время в миллисекундах UTC
+      (для MOEX проверить единицы и часовой пояс: время может приходить по Москве
+      без указания пояса). Остальной код про биржи не знает
+- [ ] Допущение: время идёт вперёд в одном потоке стакана, нарушение порядка не
+      обрабатывается. Учесть при подключении через WebSocketPool (несколько
+      соединений) и при смене источника времени
+- [ ] DatasetTestCollector.cpp: убрать лишний #include<QDateTime>
 
 ### Детектор AggressiveIcebergDetector
 - [ ] restedQty: остаток агрессора ложится на ПРОТИВОПОЛОЖНУЮ сторону
