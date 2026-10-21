@@ -71,6 +71,7 @@ void OrderBookModel::applyDelta(const OrderBookSnapshot& delta)
 
     merge(m_snapshot.bids, delta.bids, true);   // биды: лучший (высокий) сверху
     merge(m_snapshot.asks, delta.asks, false);  // аски: лучший (низкий) сверху
+    m_snapshot.timestamp = delta.timestamp;
 }
 /**
  * @brief Устанавливает глубину стакана (количество отображаемых уровней).

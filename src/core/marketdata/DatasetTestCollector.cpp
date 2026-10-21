@@ -55,8 +55,7 @@ void DatasetTestCollector::onOrderBookReceived(const QString& exchange, const QS
 	{
 		m_book.setData(snapshot);
 	}
-	qint64 now = QDateTime::currentMSecsSinceEpoch();
-	m_collector.recordState(now, m_book.snapshot());
+	m_collector.recordState(snapshot.timestamp, m_book.snapshot());
 }
 void DatasetTestCollector::onTickSizesLoaded(const QString& exchange, const QHash<QString, double>& tickSizes)
 {
