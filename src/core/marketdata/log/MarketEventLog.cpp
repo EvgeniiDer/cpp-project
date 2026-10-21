@@ -4,6 +4,10 @@
 #include<QStringList>
 #include<QDebug>
 
+namespace
+{
+	constexpr int kPricePrecision = 17;
+}
 
 MarketEventLog::MarketEventLog(const QString& logFilePath, qint64 retentionMs)
 	:m_logFilePath(logFilePath), m_retentionMs(retentionMs)
@@ -113,7 +117,7 @@ void MarketEventLog::appendToDisk(const MarketEvent& event) const
 	out << event.timestamp << ','
 		<< event.side << ','
 		<< typeToString(event.type) << ','
-		<< event.price << ','
+		<< QString::number(event.price, 'g', kPricePrecision) << ','
 		<< event.magnitude << '\n';
 	file.close();
 }
