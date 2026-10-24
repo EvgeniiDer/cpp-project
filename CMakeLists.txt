@@ -107,6 +107,9 @@ function(add_qt_test name)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
-add_qt_test(AggressiveIcebergDetectorTest)
+add_qt_test(AggressiveIcebergDetectorTest
+            src/core/marketdata/detectors/AggressiveIcebergDetector.cpp
+            src/core/marketdata/log/MarketEventLog.cpp)
 add_qt_test(DetectorMathTest)
-add_qt_test(MarketEventLogTest src/core/marketdata/log/MarketEventLog.cpp)
+add_qt_test(MarketEventLogTest
+            src/core/marketdata/log/MarketEventLog.cpp)
