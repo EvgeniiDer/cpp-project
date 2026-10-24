@@ -22,6 +22,15 @@ namespace
 		MarketEventLog log;
 		explicit TempLog(qint64 retention = kDay) : log(dir.filePath("events.csv"), retention){}
 	};
+	bool writeTextFile(const QString& path, const QByteArray& content)
+	{
+		QFile file(path);
+		if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+		{
+			return false;
+		}
+		return file.write(content) == content.size();
+	}
 
 }
 
@@ -48,15 +57,109 @@ private slots:
 	////-- constructor
 
 	void load_missingFile_givesEmptyLog();
-	//void load_validFile_loadsEvents();
-	//void load_emptyLines_areSkipped();
-	//void load_wrongFileCount_lineIsSkipped();
-	//void laod_badNumber_lineIsSkipped();
-	//void load_unknownType_behavesAsDecided();
-	//void load_oldEvents_evictedAsDecided();
+	void load_validFile_loadsEvents();
+	void load_emptyLines_areSkipped();
+	void load_wrongFileCount_lineIsSkipped();
+	void load_badNumber_lineIsSkipped();
+	void load_unknownType_behavesAsDecided();
+	void load_oldEvents_evictedAsDecided();
 };
 
 ////--- constructor
+void MarketEventLogTest::load_oldEvents_evictedAsDecided()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	const QString path = dir.filePath("events.csv");
+
+	QVERIFY(writeTextFile(path,
+		"1000,bid,sweep,100,1\n" // слишком старое
+		"99000,bid,sweep,100,1\n"        // ровно на границе, остаётся
+		"100000,bid,sweep,100,1\n"));
+
+	MarketEventLog log(path, 1000);
+
+	QCOMPARE(log.countNear(MarketEventType::Sweep, QStringLiteral("bid"), 100.0, kZoneTolerance), 2);
+}
+
+void MarketEventLogTest::load_badNumber_lineIsSkipped()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	const QString path = dir.filePath("events.csv");
+
+	QVERIFY(writeTextFile(path, 
+		"abc,bid,sweep,100,1\n"        // время не число
+		"1500,bid,sweep,xyz,1\n"       // цена не число
+		"1600,bid,sweep,100,oops\n"    // объём не число
+		"2000,bid,sweep,100,1\n"));
+
+	MarketEventLog log(path, kDay);
+
+	QCOMPARE(log.countNear(MarketEventType::Sweep, QStringLiteral("bid"), 100.0, kZoneTolerance), 1);
+}
+
+void MarketEventLogTest::load_unknownType_behavesAsDecided()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	const QString path = dir.filePath("events.csv");
+
+	QVERIFY(writeTextFile(path,
+		"1000,bid,foo,100,1\n" // неизвестный тип: строка должна быть пропущена
+		"2000,bid,sweep,100,1\n"));
+
+	MarketEventLog log(path, kDay);
+	QCOMPARE(log.countNear(MarketEventType::Sweep, QStringLiteral("bid"), 100.0, kZoneTolerance), 1);
+}
+
+void MarketEventLogTest::load_wrongFileCount_lineIsSkipped()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	const QString path = dir.filePath("events.csv");
+	QVERIFY(writeTextFile(path,
+		"1000,bid,sweep,100\n"     // 4 поля: не хватает объёма
+		"1500,bid,sweep,100,1,extra\n"    // 6 полей: лишнее поле
+		"2000,bid,sweep,100,1\n"));
+
+	MarketEventLog log(path, kDay);
+
+	QCOMPARE(log.countNear(MarketEventType::Sweep, QStringLiteral("bid"), 100.0, kZoneTolerance), 1);
+}
+
+void MarketEventLogTest::load_emptyLines_areSkipped()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+	const QString path = dir.filePath("events.csv");
+
+	QVERIFY(writeTextFile(path, "1000,bid,sweep,100,1\n"
+		"\n"
+		"   \n"
+		"\n"                                                    "
+		"2000,bid,sweep,100,1\n"
+		"\n"));
+	MarketEventLog log(path, kDay);
+	QCOMPARE(log.countNear(MarketEventType::Sweep, QStringLiteral("bid"), 100.0, kZoneTolerance), 2);
+}
+
+void MarketEventLogTest::load_validFile_loadsEvents()
+{
+	QTemporaryDir dir;
+	QVERIFY(dir.isValid());
+
+	const QString path = dir.filePath("events.csv");
+
+	QVERIFY(writeTextFile(path, "1000,bid,sweep,100,1\n"	"2000,ask,spoof,200.5,2\n" "3000,bid,sweep,100,1\n"));
+
+	MarketEventLog log(path, kDay);
+
+	QCOMPARE(log.countNear(MarketEventType::Sweep, QStringLiteral("bid"), 100.0, kZoneTolerance), 2);
+	QCOMPARE(log.countNear(MarketEventType::SpoofBurst, QStringLiteral("ask"), 200.5, kZoneTolerance), 1);
+	QCOMPARE(log.countNear(MarketEventType::Sweep, QStringLiteral("ask"), 200.5, kZoneTolerance), 0);
+}
+
 void MarketEventLogTest::load_missingFile_givesEmptyLog()
 {
 	QTemporaryDir dir;
@@ -65,7 +168,11 @@ void MarketEventLogTest::load_missingFile_givesEmptyLog()
 	const QString path = dir.filePath("events.csv");
 	QVERIFY(!QFile::exists(path));
 
-	MarketEventLog(path, kDay);
+	MarketEventLog log(path, kDay);
+
+	QCOMPARE(log.countNear(MarketEventType::Sweep, QStringLiteral("bid"), 100.0, kZoneTolerance), 0);
+
+	QCOMPARE(log.countNear(MarketEventType::Sweep, QStringLiteral("ask"), 100.0, kZoneTolerance), 0);
 }
 
 ////--- record
