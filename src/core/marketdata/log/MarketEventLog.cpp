@@ -26,7 +26,7 @@ QString MarketEventLog::typeToString(const MarketEventType& event)
 	}
 	return QStringLiteral("unknown");
 }
-MarketEventType MarketEventLog::typeFromString(const QString& text)
+std::optional<MarketEventType> MarketEventLog::typeFromString(const QString& text)
 {
 	if (text == QStringLiteral("sweep"))
 	{
@@ -36,11 +36,8 @@ MarketEventType MarketEventLog::typeFromString(const QString& text)
 	{
 		return MarketEventType::SpoofBurst;
 	}
-	// Неизвестный тип в файле (старый формат, ручная правка и т.п.) -
-    // не валим загрузку всей истории из-за одной строки, просто
-    // предупреждаем и берём дефолт.
 	qWarning() << "[MarketEventLog] Unknown event type in log file: " << text;
-	return MarketEventType::Sweep;
+	return std::nullopt;
 }
 
 void MarketEventLog::loadFromDisk()
@@ -72,7 +69,11 @@ void MarketEventLog::loadFromDisk()
 			qWarning() << "[MarketEventLog] Skipping malformed line: " << line;
 			continue;
 		}
-
+		const std::optional<MarketEventType> type = typeFromString(parts[2]);
+		if (!type)
+		{
+			continue;
+		}
 		MarketEvent event;
 		bool timestampOk = false;
 		bool priceOk = false;
@@ -80,7 +81,7 @@ void MarketEventLog::loadFromDisk()
 
 		event.timestamp = parts[0].toLongLong(&timestampOk);
 		event.side = parts[1];
-		event.type = typeFromString(parts[2]);
+		event.type = *type;
 		event.price = parts[3].toDouble(&priceOk);
 		event.magnitude = parts[4].toFloat(&magnitudeOk);
 

@@ -1,6 +1,8 @@
 #pragma once
 #include<QString>
 #include<deque>
+#include<optional>
+#include<cstdint>
 
 enum class MarketEventType : std::uint8_t
 {
@@ -30,7 +32,7 @@ private:
 	void evictStale(qint64 currentTimestamp);
 
 	static QString typeToString(const MarketEventType& event);
-	static MarketEventType typeFromString(const QString& text);
+	static std::optional<MarketEventType> typeFromString(const QString& text);
 
 	static constexpr int kLogLineFieldCount = 5;
 
