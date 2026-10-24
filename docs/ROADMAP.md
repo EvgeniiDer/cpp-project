@@ -65,8 +65,9 @@ core/storage/BinaryStorage.h, core/network/finam, ui/watchlist, ui/portfolio.
 - [ ] Срок хранения (kEventLogRetentionMs) не выбран (MarketEventLog.h:38)
 - [ ] Файл журнала только дописывается, не чистится (удаление идёт только из памяти).
       Решить: перезаписывать при загрузке или чистить периодически
-- [ ] Неизвестный тип события в файле превращается в Sweep (typeFromString).
-      Решить: пропускать такую строку
+- [x] Неизвестный тип события в файле раньше превращался в Sweep. Исправлено:
+      typeFromString возвращает std::optional, loadFromDisk пропускает такую строку
+      (тест load_unknownType_behavesAsDecided)
 - [ ] Устаревание при загрузке: комментарий говорит "от текущего момента",
       код считает от timestamp последней записи (loadFromDisk)
 - [x] Потеря точности цены в файле: QTextStream писал 6 значащих цифр,
