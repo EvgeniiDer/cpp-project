@@ -60,16 +60,16 @@ AggressiveIcebergDetector::SweepSideResult AggressiveIcebergDetector::processSid
 		}
 		++consecutive;
 		sweptQty += static_cast<float>(traded);
-	/*	if (!currentLevels.empty())
-		{
-			const double newTopPrice = currentLevels[0].price;
-			const double newTopQty = currentLevels[0].qty;
-			const bool matchesNextUntouchedLevel = consecutive < static_cast<int>(prevLevels.size())&& std::fabs(prevLevels[consecutive].price - newTopPrice) <= ctx.tickTolerance;
-			if (!matchesNextUntouchedLevel)
-			{
-				result.restedQty = static_cast<float>(newTopQty);
-			}
-		}*/
+		//if (!currentLevels.empty())
+		//{
+		//	const double newTopPrice = currentLevels[0].price;
+		//	const double newTopQty = currentLevels[0].qty;
+		//	const bool matchesNextUntouchedLevel = consecutive < static_cast<int>(prevLevels.size())&& std::fabs(prevLevels[consecutive].price - newTopPrice) <= ctx.tickTolerance;
+		//	if (!matchesNextUntouchedLevel)
+		//	{
+		//		result.restedQty = static_cast<float>(newTopQty);
+		//	}
+		//}
 	}
 	result.sweptLevels = consecutive;
 	result.sweptQty = sweptQty;
