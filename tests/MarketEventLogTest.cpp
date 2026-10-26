@@ -137,7 +137,7 @@ void MarketEventLogTest::load_emptyLines_areSkipped()
 	QVERIFY(writeTextFile(path, "1000,bid,sweep,100,1\n"
 		"\n"
 		"   \n"
-		"\n"                                                    "
+		"\n"                                                    
 		"2000,bid,sweep,100,1\n"
 		"\n"));
 	MarketEventLog log(path, kDay);
