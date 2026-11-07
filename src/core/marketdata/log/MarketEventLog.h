@@ -25,11 +25,11 @@ public:
 	explicit MarketEventLog(const QString& logFilePath, qint64 retentionMs);
 	void record(const MarketEvent& event);
 
+	void evictStale(qint64 currentTimestamp);
 	[[nodiscard]] int countNear(MarketEventType type, const QString& side, double price, double priceTolerance)const;
 private:
 	void loadFromDisk();
 	void appendToDisk(const MarketEvent& event)const;
-	void evictStale(qint64 currentTimestamp);
 
 	static QString typeToString(const MarketEventType& event);
 	static std::optional<MarketEventType> typeFromString(const QString& text);

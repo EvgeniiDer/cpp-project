@@ -190,13 +190,19 @@ void AggressiveIcebergDetectorTest::detect_repeatSweep_oldEventsAreForgotten()
 
     s.timestamp = 1400;
     const OrderBookFeatureRow four = s.run();
-    QCOMPARE(four.bidSweepRepeatCount, 3);
+    QCOMPARE(four.bidSweepRepeatCount, 0);
 
     s.timestamp = 1500;
     const OrderBookFeatureRow five = s.run();
     QCOMPARE(five.bidSweepRepeatCount, 1);
 
     QCOMPARE(log.countNear(MarketEventType::Sweep, QStringLiteral("bid"), 100.0, kZoneTolerance), 2);
+
+    s.timestamp = 5000;
+    const OrderBookFeatureRow six = s.run();
+    QCOMPARE(six.bidSweepRepeatCount, 0);
+
+    QCOMPARE(log.countNear(MarketEventType::Sweep, QStringLiteral("bid"), 100.0, kZoneTolerance), 1);
 
 }
 

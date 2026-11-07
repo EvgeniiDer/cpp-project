@@ -106,6 +106,7 @@ void AggressiveIcebergDetector::detect(const DetectionContext& ctx, OrderBookFea
 		return;
 	}
 
+	ctx.eventLog->evictStale(ctx.currentTimestamp);
 	// "Зона интереса" - цена ТОП-уровня ДО начала зачистки. Спрашиваем
 	// MarketEventLog, не пылесосили ли её раньше, и ТОЛЬКО ПОСЛЕ этого
 	// записываем текущее событие (иначе sweep засчитал бы сам себя).
