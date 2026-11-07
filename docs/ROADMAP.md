@@ -146,20 +146,16 @@ core/storage/BinaryStorage.h, core/network/finam, ui/watchlist, ui/portfolio.
       (0-1 тик на дрожание). Цена: меняются MarketEvent, формат файла журнала,
       countNear и их тесты, поэтому решать до шага 5. Альтернатива двум счётчикам
       или дополнение к ним. Решение пока не принято
-- [ ] ОШИБКА ПОРЯДКА: detect вызывает countNear ДО record, а старые события
-      вытесняет только record (evictStale внутри него); countNear время не смотрит.
-      Следствие: sweep видит устаревшие события. После паузы дольше срока хранения
-      repeatCount всё равно >= 1 (последнее событие ещё в памяти в момент подсчёта),
-      то есть repeatCount никогда не возвращается к 0 после первого sweep в зоне.
-      Пример (срок 1000): события 100/200/300, sweep в 1400 даёт repeatCount 3,
-      по смыслу должно быть 0; sweep в 1500 даёт 1 (событие 1400 свежее), это верно.
-      Тест: detect_repeatSweep_oldEventsAreForgotten (пока ожидает 3 для 1400).
-      Исправление, вариант 1 (предпочтительный): передавать в countNear текущее время
-      и пропускать события старше now - retention; countNear остаётся const.
-      Вариант 2: вызывать evictStale(ctx.currentTimestamp) в детекторе перед
-      countNear (меняет журнал из места, где только читаем).
-      Порядок: тест на текущее поведение уже есть, правка отдельным коммитом,
-      после правки в тесте для 1400 ожидание сменить с 3 на 0
+- [x] ОШИБКА ПОРЯДКА (исправлено): detect вызывал countNear ДО record, а старые
+      события вытесняет только record (evictStale внутри него); countNear время не
+      смотрит. Из-за этого sweep видел устаревшие события, и repeatCount никогда не
+      возвращался к 0 после первого sweep в зоне.
+      Исправление (вариант 2): evictStale стал публичным методом MarketEventLog,
+      детектор вызывает ctx.eventLog->evictStale(ctx.currentTimestamp) перед
+      countNear. Вариант 1 (время в countNear) отвергнут: пришлось бы менять 28
+      вызовов countNear в тестах.
+      Тест: detect_repeatSweep_oldEventsAreForgotten (срок 1000: sweep в 1400 даёт 0,
+      в 1500 даёт 1, в 5000 после паузы снова 0)
 - [ ] Переименовать tickTolerance в tickSize
 - [ ] Имя параметра в .h (tolerance) и в .cpp (priceEpsilon) не совпадает
 
@@ -177,7 +173,8 @@ core/storage/BinaryStorage.h, core/network/finam, ui/watchlist, ui/portfolio.
 - [x] 1. Каркас: tests/, add_qt_test, пустой тест
 - [x] 2. DetectorMath: sumTradedQtyAtPriceByAggressor
 - [x] 3. MarketEventLog: countNear, запись/чтение файла, evictStale, грязный файл
-- [ ] 4. AggressiveIcebergDetector: 10 тестов (+ ask repeatCount, порог 90%)
+- [x] 4. AggressiveIcebergDetector: 11 тестов (14 прогонов, порог 90% таблицей),
+      включая ask repeatCount и забывание старых событий
 - [ ] 5. Подключить детектор в OrderBookHistoryManager (#include, push_back
       в конструкторе, MarketEventLog в watch(), m_eventLog.get() 8-м элементом
       в DetectionContext)
