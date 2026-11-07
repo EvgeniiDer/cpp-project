@@ -35,7 +35,9 @@ struct OrderBookFeatureRow
 	float bidSweepRestedQty = 0.0f;
 	float askSweepRestedQty = 0.0f;
 	int bidSweepRepeatCount = 0;
+	int bidSweepRepeatCountNarrow = 0;
 	int askSweepRepeatCount = 0;
+	int askSweepRepeatCountNarrow = 0;
 
 	bool isValid = false;
 

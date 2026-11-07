@@ -8,6 +8,20 @@ QString AggressiveIcebergDetector::name() const
 {
 	return QStringLiteral("AggressiveIcebergDetector");
 }
+double AggressiveIcebergDetector::zoneTolernce(const DetectionContext& ctx, int ticks)
+{
+	return ctx.tickTolerance * (ticks + 0.5);
+}
+AggressiveIcebergDetector::RepeatCounts AggressiveIcebergDetector::countRepeatsAndRecord(const DetectionContext& ctx, const QString& side, double anchorPrice, float sweptQty)
+{
+	RepeatCounts counts;
+	counts.wide = ctx.eventLog->countNear(MarketEventType::Sweep, side, anchorPrice, zoneTolernce(ctx, kRepeatZoneTicks));
+	counts.narrow = ctx.eventLog->countNear(MarketEventType::Sweep, side, anchorPrice, zoneTolernce(ctx, kNarrowRepeatZoneTicks));
+
+	ctx.eventLog->record(MarketEvent{ ctx.currentTimestamp, side, anchorPrice, MarketEventType::Sweep, sweptQty });
+	return counts;
+}
+
 
 double AggressiveIcebergDetector::findQtyAtPrice(const std::vector<OrderBookLevel>& levels, double price, double priceEpsilon )
 {
@@ -107,25 +121,19 @@ void AggressiveIcebergDetector::detect(const DetectionContext& ctx, OrderBookFea
 	}
 
 	ctx.eventLog->evictStale(ctx.currentTimestamp);
-	// "Зона интереса" - цена ТОП-уровня ДО начала зачистки. Спрашиваем
-	// MarketEventLog, не пылесосили ли её раньше, и ТОЛЬКО ПОСЛЕ этого
-	// записываем текущее событие (иначе sweep засчитал бы сам себя).
 
-	const double zoneTolerance = ctx.tickTolerance * (kRepeatZoneTicks + 0.5);
 	if (bidResult.sweptLevels >= kMinSweepLevels)
 	{
-		const double anchorPrice = prevBook.bids[0].price;
-		outRow.bidSweepRepeatCount = ctx.eventLog->countNear(MarketEventType::Sweep, QStringLiteral("bid"), anchorPrice, zoneTolerance);
-
-		ctx.eventLog->record(MarketEvent{ctx.currentTimestamp, QStringLiteral("bid"), anchorPrice,	MarketEventType::Sweep, bidResult.sweptQty });
+		const RepeatCounts repeats = countRepeatsAndRecord(ctx, QStringLiteral("bid"), prevBook.bids[0].price, bidResult.sweptQty);
+		outRow.bidSweepRepeatCount = repeats.wide;
+		outRow.bidSweepRepeatCountNarrow = repeats.narrow;
 	}
 
 	if (askResult.sweptLevels >= kMinSweepLevels)
 	{
-		const double anchorPrice = prevBook.asks[0].price;
-		outRow.askSweepRepeatCount = ctx.eventLog->countNear(MarketEventType::Sweep, QStringLiteral("ask"), anchorPrice, zoneTolerance);
-
-		ctx.eventLog->record(MarketEvent{ctx.currentTimestamp, QStringLiteral("ask"), anchorPrice,	MarketEventType::Sweep, askResult.sweptQty });
+		const RepeatCounts repeats = countRepeatsAndRecord(ctx, QStringLiteral("ask"), prevBook.asks[0].price, askResult.sweptQty);
+		outRow.askSweepRepeatCount = repeats.wide;
+		outRow.askSweepRepeatCountNarrow = repeats.narrow;
 	}
 }
 

@@ -19,6 +19,14 @@ public:
 	[[nodiscard]] QString name() const override;
 
 private:
+	struct RepeatCounts
+	{
+		int wide = 0;
+		int narrow = 0;
+	};
+	static RepeatCounts countRepeatsAndRecord(const DetectionContext& ctx, const QString& side, double anchorPrice, float sweptQty);
+	[[nodiscard]] static double zoneTolernce(const DetectionContext& ctx, int ticks);
+
 	struct SweepSideResult
 	{
 		int sweptLevels = 0;    // сколько уровней подряд подтверждённо вычищено
@@ -36,5 +44,6 @@ private:
 	static constexpr int kSweepScanDepth = 10;
 	static constexpr double kExplainedRatioThreshold = 0.9;
 	static constexpr int kRepeatZoneTicks = 3;
+	static constexpr int kNarrowRepeatZoneTicks = 0;
 
 };

@@ -70,6 +70,32 @@ namespace
 			}
         );
     }
+    Scenario bidSweepFrom(double topPrice, MarketEventLog* log)
+    {
+        Scenario s;
+        s.log = log;
+        s.prev = book(
+            {
+                {topPrice, 5.0},
+                {topPrice - 0.1, 4.0},
+                {topPrice - 0.2, 3.0},
+                {topPrice - 0.4, 2.0}
+            },
+            baseBook().asks
+        );
+        s.current = book(
+            {
+                {topPrice - 0.2, 3.0},
+                {topPrice - 0.3, 2.0}
+            },
+            baseBook().asks
+        );
+        s.trades = {
+	        trade(topPrice, 5.0, false),
+            trade(topPrice - 0.1, 4.0, false)
+        };
+        return s;
+    }
 }
 
 
@@ -78,6 +104,7 @@ class AggressiveIcebergDetectorTest : public QObject
     Q_OBJECT
 
 private slots:
+    void detect_repeatSweep_narrowAndWideZones();
     void detect_bidSweep_isDetected();
     void detect_askSweep_isDetected();
     void detect_partialFill_isNotSweep();
@@ -333,6 +360,30 @@ void AggressiveIcebergDetectorTest::detect_wrongAggressorSide_isNotSweep()
     QCOMPARE(row.askSweepLevels, 0);
     QCOMPARE(row.askSweepQty, 0.0f);
 
+}
+
+void AggressiveIcebergDetectorTest::detect_repeatSweep_narrowAndWideZones()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    MarketEventLog log(dir.filePath("events.csv"), kDay);
+    Scenario s = bidSweepFrom(100.0, &log);
+    s.timestamp = 100;
+    const OrderBookFeatureRow first = s.run();
+    QCOMPARE(first.bidSweepRepeatCount, 0);
+    QCOMPARE(first.bidSweepRepeatCountNarrow, 0);
+
+    s = bidSweepFrom(99.7, &log);
+    s.timestamp = 200;
+    const OrderBookFeatureRow second = s.run();
+    QCOMPARE(second.bidSweepRepeatCount, 1);
+    QCOMPARE(second.bidSweepRepeatCountNarrow, 0);
+
+    s = bidSweepFrom(100.0, &log);
+    s.timestamp = 300;
+    const OrderBookFeatureRow third = s.run();
+    QCOMPARE(third.bidSweepRepeatCount, 2);
+    QCOMPARE(third.bidSweepRepeatCountNarrow, 1);
 }
 
 void AggressiveIcebergDetectorTest::detect_bidSweep_isDetected()
