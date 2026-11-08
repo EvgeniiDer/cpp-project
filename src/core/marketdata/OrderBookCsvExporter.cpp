@@ -2,9 +2,9 @@
 #include<QFile>
 #include<QTextStream>
 #include<QDateTime>
+#include"CsvColumns.h"
 
-
-namespace 
+namespace
 {
 	int computeTarget(const QVector<OrderBookFeatureRow>& rows, int currentIndex, qint64 horizonMs)
 	{
@@ -65,32 +65,51 @@ namespace
 		}
 		return(it->midPrice > current.midPrice) ? 1 : 0;
 	}
+	const std::vector<CsvColumn>& featureColumns()
+	{
+		static const std::vector<CsvColumn> columns = {
+		 CsvColumns::make("best_bid",        &OrderBookFeatureRow::bestBid),
+		CsvColumns::make("best_ask",        &OrderBookFeatureRow::bestAsk),
+		CsvColumns::make("spread",          &OrderBookFeatureRow::spread),
+		CsvColumns::make("imbalance_l1",    &OrderBookFeatureRow::imbalanceL1),
+		CsvColumns::make("imbalance_sma3",  &OrderBookFeatureRow::imbalanceSma3),
+		CsvColumns::make("bid_spoof_drop",  &OrderBookFeatureRow::bidSpoofDrop),
+		CsvColumns::make("ask_spoof_drop",  &OrderBookFeatureRow::askSpoofDrop),
+		CsvColumns::make("bid_fake_ratio",  &OrderBookFeatureRow::bidFakeRatio),
+		CsvColumns::make("ask_fake_ratio",  &OrderBookFeatureRow::askFakeRatio),
+		CsvColumns::make("vol_depth_bids",  &OrderBookFeatureRow::volumeDepthBids),
+		CsvColumns::make("vol_depth_asks",  &OrderBookFeatureRow::volumeDepthAsks),
 
+		CsvColumns::timeColumn("hour", [](const QDateTime& dt)
+		{
+			return dt.time().hour();
+		}),
+	    CsvColumns::timeColumn("day_of_week", [](const QDateTime& dt)
+	    {
+			return dt.date().dayOfWeek();
+	    }),
+		CsvColumns::timeColumn("minute",      [](const QDateTime& dt)
+		{
+			return dt.time().minute();
+		}),
+
+
+		CsvColumns::make("bid_sweep_levels",        &OrderBookFeatureRow::bidSweepLevels),
+		CsvColumns::make("ask_sweep_levels",        &OrderBookFeatureRow::askSweepLevels),
+		CsvColumns::make("bid_sweep_qty",           &OrderBookFeatureRow::bidSweepQty),
+		CsvColumns::make("ask_sweep_qty",           &OrderBookFeatureRow::askSweepQty),
+		CsvColumns::make("bid_sweep_repeat_wide",   &OrderBookFeatureRow::bidSweepRepeatCount),
+		CsvColumns::make("bid_sweep_repeat_narrow", &OrderBookFeatureRow::bidSweepRepeatCountNarrow),
+		CsvColumns::make("ask_sweep_repeat_wide",   &OrderBookFeatureRow::askSweepRepeatCount),
+		CsvColumns::make("ask_sweep_repeat_narrow", &OrderBookFeatureRow::askSweepRepeatCountNarrow)
+		};
+		return columns;
+	}
 	QString rowToCsvLine(const OrderBookFeatureRow& row, int target)
 	{
-		QDateTime dt = QDateTime::fromMSecsSinceEpoch(row.timestamp);
-		float hour = static_cast<float>(dt.time().hour());
-		float dayOfWeek = static_cast<float>(dt.date().dayOfWeek());
-		float minute = static_cast<float>(dt.time().minute());
-
-
 		QStringList fields;
-		fields << QString::number(row.bestBid, 'f', 4)
-			<< QString::number(row.bestAsk, 'f', 4)
-			<< QString::number(row.spread, 'f', 4)
-			<< QString::number(row.imbalanceL1, 'f', 4)
-			<< QString::number(row.imbalanceSma3, 'f', 4)
-			<< QString::number(row.bidSpoofDrop, 'f', 4)
-			<< QString::number(row.askSpoofDrop, 'f', 4)
-			<< QString::number(row.bidFakeRatio, 'f', 4)
-			<< QString::number(row.askFakeRatio, 'f', 4)
-			<< QString::number(row.volumeDepthBids, 'f', 4)
-			<< QString::number(row.volumeDepthAsks, 'f', 4)
-			<< QString::number(hour, 'f', 0)
-			<< QString::number(dayOfWeek, 'f', 0)
-			<< QString::number(minute, 'f', 0)
-			<< QString::number(target);
-
+		CsvColumns::appendValues(fields, featureColumns(), row);
+		fields << QString::number(target);
 		return fields.join(",") + "\n";
 	}
 }
@@ -105,9 +124,8 @@ bool OrderBookCsvExporter::exportToCsv(const QVector<OrderBookFeatureRow>& rows,
 	}
 
 	QTextStream out(&file);
-	out << "best_bid,best_ask,spread,imbalance_l1,imbalance_sma3,"
-		"bid_spoof_drop,ask_spoof_drop,bid_fake_ratio,ask_fake_ratio,"
-		"vol_depth_bids,vol_depth_asks,hour,day_of_week,minute,target\n";
+    out << CsvColumns::header(featureColumns())
+    << ",target\n";
 
 	for (int i = 0; i < rows.size(); ++i)
 	{

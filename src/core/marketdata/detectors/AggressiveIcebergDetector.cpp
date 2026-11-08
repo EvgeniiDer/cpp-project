@@ -8,15 +8,15 @@ QString AggressiveIcebergDetector::name() const
 {
 	return QStringLiteral("AggressiveIcebergDetector");
 }
-double AggressiveIcebergDetector::zoneTolernce(const DetectionContext& ctx, int ticks)
+double AggressiveIcebergDetector::zoneTolerance(const DetectionContext& ctx, int ticks)
 {
 	return ctx.tickTolerance * (ticks + 0.5);
 }
 AggressiveIcebergDetector::RepeatCounts AggressiveIcebergDetector::countRepeatsAndRecord(const DetectionContext& ctx, const QString& side, double anchorPrice, float sweptQty)
 {
 	RepeatCounts counts;
-	counts.wide = ctx.eventLog->countNear(MarketEventType::Sweep, side, anchorPrice, zoneTolernce(ctx, kRepeatZoneTicks));
-	counts.narrow = ctx.eventLog->countNear(MarketEventType::Sweep, side, anchorPrice, zoneTolernce(ctx, kNarrowRepeatZoneTicks));
+	counts.wide = ctx.eventLog->countNear(MarketEventType::Sweep, side, anchorPrice, zoneTolerance(ctx, kRepeatZoneTicks));
+	counts.narrow = ctx.eventLog->countNear(MarketEventType::Sweep, side, anchorPrice, zoneTolerance(ctx, kNarrowRepeatZoneTicks));
 
 	ctx.eventLog->record(MarketEvent{ ctx.currentTimestamp, side, anchorPrice, MarketEventType::Sweep, sweptQty });
 	return counts;
@@ -35,6 +35,9 @@ double AggressiveIcebergDetector::findQtyAtPrice(const std::vector<OrderBookLeve
 	return 0.0;
 }
 AggressiveIcebergDetector::SweepSideResult AggressiveIcebergDetector::processSide(const std::vector<OrderBookLevel>& prevLevels, const std::vector<OrderBookLevel>& currentLevels, const DetectionContext& ctx, bool aggressorIsBuy) const
+	// "Зона интереса" - цена ТОП-уровня ДО начала зачистки. Спрашиваем
+	// MarketEventLog, не пылесосили ли её раньше, и ТОЛЬКО ПОСЛЕ этого
+	// записываем текущее событие (иначе sweep засчитал бы сам себя).
 {
 	SweepSideResult result;
 	const int limit = std::min(kSweepScanDepth, static_cast<int>(prevLevels.size()));

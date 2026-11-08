@@ -25,7 +25,7 @@ private:
 		int narrow = 0;
 	};
 	static RepeatCounts countRepeatsAndRecord(const DetectionContext& ctx, const QString& side, double anchorPrice, float sweptQty);
-	[[nodiscard]] static double zoneTolernce(const DetectionContext& ctx, int ticks);
+	[[nodiscard]] static double zoneTolerance(const DetectionContext& ctx, int ticks);
 
 	struct SweepSideResult
 	{

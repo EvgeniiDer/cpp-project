@@ -10,3 +10,6 @@ CMakeUserPresets.json
 # Generated datasets from live test runs
 dataset_test_*.csv
 external/catboost/catboost-linux-x86_64-1.2.10
+
+# Event logs written by the app during development
+/logs/

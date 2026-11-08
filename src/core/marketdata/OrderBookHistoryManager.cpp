@@ -2,15 +2,36 @@
 #include<QDebug>
 #include<algorithm>
 #include<cmath>
+#include<QDir>
+#include<QStandardPaths>
+
+
 #include"core/events/EventBus.h"
+#include"detectors/AggressiveIcebergDetector.h"
 #include "detectors/IcebergDetector.h"
 #include "detectors/SpoofDetector.h"
 
+namespace 
+{
+	constexpr  qint64 kEventLogRetentionMs = 60LL * 60 * 1000; // 1hour
+	QString eventLogPath(const QString& exchange, const QString& symbol)
+	{
+#ifdef PROJECT_LOG_DIR
+		const QString dir = QString::fromUtf8(PROJECT_LOG_DIR);
+#else
+		const QString dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/event_logs";
+#endif
+		QDir().mkpath(dir);
+		return dir + "/" + exchange + "_" + symbol + "_events.csv";
+	}
+
+}
 OrderBookHistoryManager::OrderBookHistoryManager(int depthLevels, qint64 retentionsMs,  QObject* parent)
 	: QObject(parent), m_depthLevels(depthLevels), m_retentionMs(retentionsMs)
 {
 	m_detectors.push_back(std::make_unique<SpoofDetector>());
 	m_detectors.push_back(std::make_unique<IcebergDetector>());
+	m_detectors.push_back(std::make_unique<AggressiveIcebergDetector>());
 
 	QObject::connect(&EventBus::instance(), &EventBus::tradeReceived, this, &OrderBookHistoryManager::onTradeReceived, Qt::UniqueConnection);
 }
@@ -25,7 +46,8 @@ void OrderBookHistoryManager::watch(const QString& exchange, const QString& symb
 	// учтены при анализе нового стакана.
 	m_pendingTrades.clear();
 	m_tickSizeWarned = false;
-
+	m_eventLog = std::make_unique<MarketEventLog>(eventLogPath(exchange, symbol), kEventLogRetentionMs);
+	qDebug() << "[OrderBookHistoryManager] event log:" << eventLogPath(exchange, symbol);
 	for (std::unique_ptr<IOrderBookFeatureDetector>& detector : m_detectors)
 	{
 		detector->reset();
@@ -170,7 +192,8 @@ void OrderBookHistoryManager::recordState(qint64 currentTimestamp, const OrderBo
 		currentTimestamp,
 		m_tickSize,
 		&m_pendingTrades,
-		m_depthLevels
+		m_depthLevels,
+		m_eventLog.get()
 	};
 	for (auto& detector : m_detectors)
 	{

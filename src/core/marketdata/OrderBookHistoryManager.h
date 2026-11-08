@@ -4,6 +4,8 @@
 #include<QVector>
 #include<QDateTime>
 #include<deque>
+#include<memory>
+#include"log/MarketEventLog.h"
 
 #include "detectors/IOrderBookFeatureDetector.h"
 #include"types/OrderBookDataTypes.h"
@@ -52,4 +54,5 @@ private:
 	bool m_tickSizeWarned = false;
 
 	std::vector<std::unique_ptr<IOrderBookFeatureDetector>> m_detectors;
+	std::unique_ptr<MarketEventLog> m_eventLog;
 };

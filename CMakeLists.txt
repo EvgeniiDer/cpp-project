@@ -79,7 +79,9 @@ target_include_directories(QuantumTrader SYSTEM PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/external/simdjson"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/catboost/include"
 )
-
+target_compile_definitions(QuantumTrader PRIVATE
+    PROJECT_LOG_DIR="${CMAKE_CURRENT_SOURCE_DIR}/logs"
+)
 if(WIN32)
     add_custom_command(TARGET QuantumTrader POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_CURRENT_SOURCE_DIR}/external/catboost/lib/catboostmodel.dll"
